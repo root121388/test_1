@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam_2.dao.PaperDao">
+    <resultMap id="PaperMap" type="Paper">
+        <result column="pna" property="paperName"></result>
+        <result column="cno" property="courseId"></result>
+        <result column="cna" property="courseName"></result>
+        <result column="starttime" property="startTime"></result>
+    </resultMap>
+
+    <insert id="insertPaper" useGeneratedKeys="true" keyProperty="id">
+    insert into paper(pna,time,startTime) values(#{paperName},#{time},#{startTime})
+    </insert>
+    <insert id="insertPCRel">
+    insert  into rel_course_paper values(#{courseId},#{id})
+    </insert>
+    <update id="publish">
+        update paper set state = 1
+        where id = #{id}
+    </update>
+    <update id="undoPublish">
+        update paper set state = 0
+        where id = #{id}
+    </update>
+    <update id="update">
+        update paper set pna = #{paperName},time=#{time},startTime=#{startTime}
+        where id = #{id}
+    </update>
+    <update id="updatePC">
+        update rel_course_paper set cno = #{courseId} where pno= #{id}
+    </update>
+    <update id="updateState">
+        update paper set state =#{state} where id=#{paperId}
+    </update>
+    <delete id="deletePCByPaper">
+        delete from rel_course_paper where pno = #{paperId}
+    </delete>
+    <delete id="deletePaper">
+        delete from paper where id = #{paperId}
+    </delete>
+
+    <select id="selectALL" resultMap="PaperMap">
+        select id, pna, time,starttime, course.cno, cna,state
+        from paper, course, rel_course_paper
+        where id = rel_course_paper.pno and rel_course_paper.cno = course.cno
+    </select>
+    <select id="selectAllByUserID" resultMap="PaperMap">
+        select id, pna, time, starttime,course.cno, cna,state
+        from paper, course, rel_course_paper, rel_course_user
+        where id = rel_course_paper.pno
+          and rel_course_paper.cno = course.cno
+          and rel_course_user.cno = rel_course_paper.cno
+          and rel_course_user.user_id = #{id}
+          and state>=1
+    </select>
+    <select id="selectByCourseId" resultMap="PaperMap">
+        select id, pna, time,starttime, course.cno, cna,state
+        from paper, course, rel_course_paper
+        where id = rel_course_paper.pno
+          and rel_course_paper.cno = course.cno
+          and rel_course_paper.cno = #{id}
+    </select>
+    <select id="checkByUAndC" resultMap="PaperMap">
+        select id, pna, time, starttime,course.cno, cna,state
+        from paper, course, rel_course_paper, rel_course_user
+        where id = rel_course_paper.pno
+          and rel_course_paper.cno = course.cno
+          and rel_course_user.cno = rel_course_paper.cno
+          and rel_course_user.user_id = #{userId}
+          and course.cno = #{courseId}
+          and state=1
+    </select>
+    <select id="selectAllByT" resultMap="PaperMap">
+        select id, pna, time, starttime,course.cno, cna,state
+        from paper, course, rel_course_paper, rel_course_user
+        where id = rel_course_paper.pno
+          and rel_course_paper.cno = course.cno
+          and rel_course_user.cno = rel_course_paper.cno
+          and rel_course_user.user_id = #{id}
+    </select>
+    <select id="selectByPaperId" resultMap="PaperMap">
+        select * from paper where id=#{id}
+    </select>
+    <select id="selectPaperCourse" resultType="java.lang.Integer">
+        select cno from rel_course_paper where pno = #{id}
+    </select>
+</mapper>
+

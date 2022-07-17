@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation=
+               "http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+                 http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+                 http://www.springframework.org/schema/aop  http://www.springframework.org/schema/aop/spring-aop.xsd       ">
+    <context:component-scan base-package="com.exam_2">
+        <!--    排除controller-->
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+    <!--    加载德鲁伊配置文件-->
+    <context:property-placeholder location="classpath:druid.properties" />
+    <bean id="dataSource" class="${jdbc.dataSource}" destroy-method="close">
+        <property name="driverClassName" value="${jdbc.driverClassName}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+    </bean>
+    <!--    配置mybatis的SqlSessionFactory-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+    </bean>
+    <!--    扫描mapper所在包 实现mapper并放到容器中 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.exam_2.dao"></property>
+    </bean>
+
+
+    <!--    平台事务管理器-->
+    <!--    声明式事务控制-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!--    配置事务增强-->
+    <tx:advice id="txAdvice">
+        <tx:attributes>
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+<!--&lt;!&ndash;    事物的aop织入&ndash;&gt;-->
+<!--    <aop:config>-->
+<!--        <aop:advisor advice-ref="txAdvice" pointcut="execution(* com.exam_2.service.impl.*.*(..))"></aop:advisor>-->
+<!--    </aop:config>-->
+
+</beans>

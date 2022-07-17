@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam_2.dao.RecordDao">
+    <insert id="addRecord">
+        insert into ${name}(id)
+        values (#{question})
+    </insert>
+    <insert id="addScoreRecord">
+        insert into record(record.id, record.examId, userId, count, state)
+        values (null, #{examId}, #{userId}, 0, 1)
+    </insert>
+
+    <update id="createRecordTable">
+        create table ${name}
+        (
+            id varchar(10) not null
+        )
+    </update>
+    <update id="truncateRecord">
+        truncate table ${name}
+    </update>
+    <update id="appendColumn">
+        alter table ${table}
+            add column ${columnName} varchar(50) default 0 not null;
+    </update>
+    <update id="addStuScore">
+        update ${table}
+        set ${columnName} = #{answer}
+        where id = #{id}
+    </update>
+    <update id="updateRecord">
+        update record
+        set state = 2
+        where userId = #{userId}
+          and examId = #{paperId}
+    </update>
+    <update id="setScore">
+        update ${table}
+        set ${columnName} = #{score}
+        where id = #{id}
+    </update>
+    <update id="updateCount">
+        update record
+        set count = #{count},
+            state = 3
+        where userId = #{userId}
+          and examId = #{paperId}
+    </update>
+    <update id="dropTable">
+        drop table ${name}
+    </update>
+    <delete id="deleteByPaperId">
+        delete from record where examId=#{paperId}
+    </delete>
+    <delete id="deleteByUserId">
+        delete from record where userId=#{userId}
+    </delete>
+
+    <select id="isRecordExist" resultType="java.lang.Integer">
+        SELECT COUNT(*) as count
+        FROM information_schema.TABLES
+        WHERE table_name = #{name}
+    </select>
+    <select id="selectALlByUser" resultType="Record">
+        select record.id,
+               record.examId,
+               userId,
+               record.starttime,
+               endtime,
+               count,
+               state
+        from record,
+             paper
+        where userId = #{userId}
+          and record.examId = paper.id
+    </select>
+    <select id="selectDate" resultType="java.util.Date">
+        select  record.starttime
+        from record
+        where id = 1
+    </select>
+    <select id="selectAllMajorByUserId" parameterType="java.lang.String" resultType="java.lang.String">
+        select distinct major
+        from record,
+             paper
+        where userId = #{userId}
+          and record.examId = paper.id
+    </select>
+    <select id="isScoreRecordExist" resultType="java.lang.Integer">
+        select count(*)
+        from record
+        where examId = #{examId}
+          and userId = #{userId}
+    </select>
+    <select id="selectRecord" resultType="java.lang.Integer">
+        select state
+        from record
+        where examId = #{paperId}
+          and userId = #{userId}
+    </select>
+    <select id="selectAnswer" resultType="java.lang.String">
+        select ${columnName}
+        from ${table}
+    </select>
+    <select id="selectScore" resultType="java.lang.Integer">
+        select ${columnName}
+        from ${table}
+    </select>
+    <select id="selectGradedPaperByUser" resultType="com.exam_2.pojo.Record">
+        select record.id,
+               record.examId,
+               pna,
+                name,
+               userId,
+               record.starttime,
+               endtime,
+               count,
+               paper.state
+        from record,
+             paper, user_info
+        where userId = #{userId}
+          and record.examId = paper.id
+          and record.state = 3
+            and userId=user_info.id
+    </select>
+    <select id="selectStu" resultType="java.lang.Integer">
+        select userId from record where examId=#{id}
+    </select>
+    <select id="selectS" resultType="java.lang.Integer">
+        select ${columnName} from ${table}  where id = #{id}
+    </select>
+    <select id="selectAllTotalByC" resultType="java.lang.Integer">
+        select count from record where examId= #{id}
+    </select>
+    <select id="selectGradedPaperByP" resultType="com.exam_2.pojo.Record">
+        select record.id,
+               record.examId,
+               pna,
+               name,
+               userId,
+               record.starttime,
+               endtime,
+               count,
+               paper.state
+        from record,
+             paper, user_info
+        where record.examId = #{paperId}
+          and record.examId = paper.id
+          and record.state = 3
+          and userId=user_info.id
+    </select>
+
+
+</mapper>

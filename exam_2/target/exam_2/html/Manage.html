@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>后台</title>
+</head>
+<body>
+<div id="app">
+    <el-container style="height: 500px; border: 1px solid #eee">
+        <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
+            <el-menu :default-openeds="['1', '3']">
+                <el-submenu index="1">
+                    <template slot="title"><i class="el-icon-message"></i>导航一</template>
+                    <el-menu-item-group>
+                        <template slot="title">分组一</template>
+                        <el-menu-item index="1-1">选项1</el-menu-item>
+                        <el-menu-item index="1-2">选项2</el-menu-item>
+                    </el-menu-item-group>
+                    <el-menu-item-group title="分组2">
+                        <el-menu-item index="1-3">选项3</el-menu-item>
+                    </el-menu-item-group>
+                    <el-submenu index="1-4">
+                        <template slot="title">选项4</template>
+                        <el-menu-item index="1-4-1">选项4-1</el-menu-item>
+                    </el-submenu>
+                </el-submenu>
+                <el-submenu index="2">
+                    <template slot="title"><i class="el-icon-menu"></i>导航二</template>
+                    <el-menu-item-group>
+                        <template slot="title">分组一</template>
+                        <el-menu-item index="2-1">选项1</el-menu-item>
+                        <el-menu-item index="2-2">选项2</el-menu-item>
+                    </el-menu-item-group>
+                    <el-menu-item-group title="分组2">
+                        <el-menu-item index="2-3">选项3</el-menu-item>
+                    </el-menu-item-group>
+                    <el-submenu index="2-4">
+                        <template slot="title">选项4</template>
+                        <el-menu-item index="2-4-1">选项4-1</el-menu-item>
+                    </el-submenu>
+                </el-submenu>
+                <el-submenu index="3">
+                    <template slot="title"><i class="el-icon-setting"></i>导航三</template>
+                    <el-menu-item-group>
+                        <template slot="title">分组一</template>
+                        <el-menu-item index="3-1">选项1</el-menu-item>
+                        <el-menu-item index="3-2">选项2</el-menu-item>
+                    </el-menu-item-group>
+                    <el-menu-item-group title="分组2">
+                        <el-menu-item index="3-3">选项3</el-menu-item>
+                    </el-menu-item-group>
+                    <el-submenu index="3-4">
+                        <template slot="title">选项4</template>
+                        <el-menu-item index="3-4-1">选项4-1</el-menu-item>
+                    </el-submenu>
+                </el-submenu>
+            </el-menu>
+        </el-aside>
+
+        <el-container>
+            <el-header style="text-align: right; font-size: 12px">
+                <el-dropdown>
+                    <i class="el-icon-setting" style="margin-right: 15px"></i>
+                    <el-dropdown-menu slot="dropdown">
+                        <el-dropdown-item>查看</el-dropdown-item>
+                        <el-dropdown-item>新增</el-dropdown-item>
+                        <el-dropdown-item>删除</el-dropdown-item>
+                    </el-dropdown-menu>
+                </el-dropdown>
+                <span>王小虎</span>
+            </el-header>
+
+            <el-main>
+
+            </el-main>
+        </el-container>
+    </el-container>
+    <el-table-column
+            type="selection"
+            width="55">
+    </el-table-column>
+    <el-form :inline="true" :model="user" class="demo-form-inline">
+        <el-form-item label="账号">
+            <el-input v-model="user.id" placeholder="账号"></el-input>
+        </el-form-item>
+        <el-form-item label="姓名">
+            <el-input v-model="user.name" placeholder="账号"></el-input>
+        </el-form-item>
+        <el-form-item label="性别">
+            <el-input v-model="user.sex" placeholder="账号"></el-input>
+        </el-form-item>
+        <el-form-item>
+            <el-button type="primary" @click="onSubmit">查询</el-button>
+        </el-form-item>
+    </el-form>
+
+    <el-button align="right" type="danger" icon="el-icon-delete" circle @click="deleteUsers"></el-button>
+    <el-button align="right" type="primary" @click="dialogVisible = true">新增</el-button>
+    <el-dialog
+            title="添加老师"
+            :visible.sync="dialogVisible"
+            width="30%"
+    >
+        <el-form ref="form" :model="user1" label-width="80px">
+            <el-form-item label="Dark">
+            </el-form-item>
+            <el-form-item label="账号">
+                <el-input v-model="user1.id"></el-input>
+            </el-form-item>
+            <el-form-item label="姓名">
+                <el-input v-model="user1.name"></el-input>
+            </el-form-item>
+            <el-form-item label="密码">
+                <el-input v-model="user1.password"></el-input>
+            </el-form-item>
+            <el-form-item label="性别">
+                <el-input v-model="user1.sex"></el-input>
+            </el-form-item>
+            <el-select v-model="user1.sex" placeholder="性别">
+                <el-option label="男" value="男"></el-option>
+                <el-option label="女" value="女"></el-option>
+            </el-select>
+            <el-select v-model="user1.role" placeholder="角色">
+                <el-option label="老师" value="1"></el-option>
+                <el-option label="学生" value="2"></el-option>
+            </el-select>
+            <el-form-item label="介绍">
+                <el-input type="textarea" v-model="Book.details"></el-input>
+            </el-form-item>
+
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addBook">添加书籍</el-button>
+  </span>
+    </el-dialog>
+
+    <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="currentPage"
+            :page-sizes="[5, 10, 15, 20]"
+            :page-size="pageSize"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="totalCount">
+    </el-pagination>
+
+    <el-form :label-position="top" label-width="80px" :model="formLabelAlign">
+        <el-form-item label="名称">
+            <el-input v-model="formLabelAlign.name"></el-input>
+        </el-form-item>
+        <el-form-item label="活动区域">
+            <el-input v-model="formLabelAlign.region"></el-input>
+        </el-form-item>
+        <el-form-item label="活动形式">
+            <el-input v-model="formLabelAlign.type"></el-input>
+        </el-form-item>
+    </el-form>
+
+    <el-dialog
+            title="添加图书"
+            :visible.sync=" dialogVisibleUpdate"
+            width="30%"
+    >
+        <el-form ref="form" :model="userEdit" label-width="80px">
+            <el-form-item label="账号">{{ userEdit.id }}
+            </el-form-item>
+            <el-form-item label="姓名">
+                <el-input v-model="userEdit.name"></el-input>
+            </el-form-item>
+            <el-form-item label="密码">
+                <el-input v-model="userEdit.password"></el-input>
+            </el-form-item>
+            <el-form-item label="性别">
+                <el-select v-model="userEdit.sex" placeholder="性别">
+                    <el-option label="男" value="男"></el-option>
+                    <el-option label="女" value="女"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="角色">
+                <el-select v-model="userEdit.role" placeholder="角色">
+                    <el-option label="老师" value="1"></el-option>
+                    <el-option label="学生" value="2"></el-option>
+                </el-select>
+            </el-form-item>
+
+
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+    <el-button @click="dialogVisibleUpdate = false">取 消</el-button>
+    <el-button type="primary" @click="confirmEdit">修改</el-button>
+  </span>
+    </el-dialog>
+
+
+    <el-form-item label="题目" v-for="(q,i) in questions">\n' +
+        ' <br>\n' +
+        ' <span>{{ i + 1 }}  {{ q.stem }}</span>\n' +
+        ' <br>\n' +
+        '
+        <el-radio-group v-if="q.type==1">\n' +
+            '
+            <el-radio label="a">{{ q.a }}</el-radio>
+            \n' +
+            ' <br>\n' +
+            '
+            <el-radio label="b">{{ q.b }}</el-radio>
+            \n' +
+            ' <br>\n' +
+            '
+            <el-radio label="c">{{ q.c }}</el-radio>
+            \n' +
+            ' <br>\n' +
+            '
+            <el-radio label="d">{{ q.d }}</el-radio>
+            \n' +
+            ' <br>\n' +
+            '
+        </el-radio-group>
+        \n' +
+        '
+    </el-form-item>
+    <div>
+        <el-row align="right">
+
+            <el-button align="right" type="danger" icon="el-icon-delete" circle @click="deleteBooks"></el-button>
+            <el-button align="right" type="primary" @click="dialogVisible = true">新增</el-button>
+            <el-dialog
+                    title="添加图书"
+                    :visible.sync="dialogVisible"
+                    width="30%"
+            >
+                <el-form ref="form" :model="Book" label-width="80px">
+                    <el-form-item label="Dark">
+                    </el-form-item>
+                    <el-form-item label="书籍名称">
+                        <el-input v-model="Book.bookName"></el-input>
+                    </el-form-item>
+                    <el-form-item label="作者">
+                        <el-input v-model="Book.bookAuthor"></el-input>
+                    </el-form-item>
+                    <el-form-item label="价格">
+                        <el-input v-model="Book.price"></el-input>
+                    </el-form-item>
+                    <el-form-item label="类别">
+                        <el-input v-model="Book.bookType"></el-input>
+                    </el-form-item>
+                    <el-form-item label="状态">
+                        <el-switch v-model="Book.status"
+                                   active-value="1"
+                                   inactive-value="0"
+                        ></el-switch>
+                    </el-form-item>
+                    <el-form-item label="介绍">
+                        <el-input type="textarea" v-model="Book.details"></el-input>
+                    </el-form-item>
+
+                </el-form>
+                <span slot="footer" class="dialog-footer">
+    <el-button @click="dialogVisible = false">取 消</el-button>
+    <el-button type="primary" @click="_addBook">添加书籍</el-button>
+  </span>
+            </el-dialog>
+
+        </el-row>
+        <el-table
+                :data="papers"
+                border
+                style="width: 100%">
+            <el-table-column
+                    type="index"
+                    width="50"
+                    prop="序号">
+            </el-table-column>
+            <el-table-column
+                    prop="paperName"
+                    label="试卷名称"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="time"
+                    label="考试时长"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="courseName"
+                    label="课程名称">
+            </el-table-column>
+            <el-table-column label="操作">
+                <template slot-scope="scope">
+                    <el-button
+                            size="mini"
+                            @click="handleEdit(scope.$index, scope.row)">编辑
+                    </el-button>
+                    <el-button
+                            size="mini"
+                            type="danger"
+                            @click="handleDelete(scope.$index, scope.row)">删除
+                    </el-button>
+                </template>
+
+            </el-table-column>
+        </el-table>
+    </div>
+
+
+    <div>
+        <el-row style="text-align: right;">
+            <el-dropdown style="left: 5px" @command="handleCommand"
+                         placement="bottom-start">
+                <span class="el-dropdown-link">
+                课程<i class="el-icon-arrow-down el-icon--right"></i>
+                </span>
+                <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item v-for="(course,i) in courses" :key="course.courseId" :command="course.courseId">
+                        {{ course.courseName }}
+                    </el-dropdown-item>
+                </el-dropdown-menu>
+            </el-dropdown>
+            <el-button align="right" type="primary" @click="dialogAVisible = true">添加</el-button>
+            <el-button align="right" type="danger" icon="el-icon-delete" circle @click="deleteChoices"></el-button>
+        </el-row>
+        <el-dialog
+                title="添加老师"
+                :visible.sync="dialogAVisible"
+                width="30%">
+            <el-form ref="form" :model="choiceA" label-width="80px">
+                <el-form-item label="Dark">
+                </el-form-item>
+                <el-form-item label="题干">
+                    <el-input v-model="choiceA.stem"></el-input>
+                </el-form-item>
+                <el-form-item label="选项：A">
+                    <el-input v-model="choiceA.a"></el-input>
+                </el-form-item>
+                <el-form-item label="选项：B">
+                    <el-input v-model="choiceA.b"></el-input>
+                </el-form-item>
+                <el-form-item label="选项：C">
+                    <el-input v-model="choiceA.c"></el-input>
+                </el-form-item>
+                <el-form-item label="选项：D">
+                    <el-input v-model="choiceA.d"></el-input>
+                </el-form-item>
+                <el-form-item label="正确答案">
+                    <el-select v-model="choiceA.rightAnswer" placeholder="正确选项">
+                        <el-option label="A" value="a"></el-option>
+                        <el-option label="B" value="b"></el-option>
+                        <el-option label="C" value="c"></el-option>
+                        <el-option label="D" value="d"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="课程">
+                    <el-select v-model="choiceA.courseId" placeholder="正确选项">
+                        <el-option v-for="(course,i) in courses" :key="course.courseId" :label="course.courseName"
+                                   :value="course.courseId"></el-option>
+                    </el-select>
+                </el-form-item>
+            </el-form>
+            <span slot="footer" class="dialog-footer">
+            <el-button @click="dialogAVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addChoice">添加题目</el-button>
+  </span>
+        </el-dialog>
+        <el-table
+                :data="choices"
+                style="width: 100%">
+            <el-table-column type="expand">
+                <template slot-scope="props">
+                    <el-form label-position="left" inline class="demo-table-expand">
+                        <el-form-item label="选项：A">
+                            <span>{{ props.row.a }}</span>
+                        </el-form-item>
+                        <el-form-item label="选项：B">
+                            <span>{{ props.row.b }}</span>
+                        </el-form-item>
+                        <el-form-item label="选项：C">
+                            <span>{{ props.row.c }}</span>
+                        </el-form-item>
+                        <el-form-item label="选项：D">
+                            <span>{{ props.row.d }}</span>
+                        </el-form-item>
+                        <el-form-item label="正确答案">
+                            <span>{{ props.row.rightAnswer }}</span>
+                        </el-form-item>
+                    </el-form>
+                </template>
+            </el-table-column>
+            <el-table-column
+                    type="index">
+            </el-table-column>
+            <el-table-column
+                    label="题干"
+                    prop="stem">
+            </el-table-column>
+            <el-table-column
+                    label="正确答案"
+                    prop="rightAnswer">
+            </el-table-column>
+        </el-table>
+    </div>
+
+
+    <div>
+        <el-row style="text-align: right;">
+            <el-dropdown style="left: 5px" @command="handleCommand"
+                         placement="bottom-start">
+                <span class="el-dropdown-link">
+                课程<i class="el-icon-arrow-down el-icon--right"></i>
+                </span>
+                <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item v-for="(course,i) in courses" :key="course.courseId" :command="course.courseId">
+                        {{ course.courseName }}
+                    </el-dropdown-item>
+                </el-dropdown-menu>
+            </el-dropdown>
+            <el-button align="right" type="primary" @click="dialogAVisible = true">添加</el-button>
+            <el-button align="right" type="danger" icon="el-icon-delete" circle @click="deleteJudges"></el-button>
+        </el-row>
+        <el-dialog
+                title="添加题目"
+                :visible.sync="dialogAVisible"
+                width="30%">
+            <el-form ref="form" :model="judgeA" label-width="80px">
+                <el-form-item label="Dark">
+                </el-form-item>
+                <el-form-item label="题干">
+                    <el-input v-model="judgeA.stem"></el-input>
+                </el-form-item>
+                <el-form-item label="正确答案">
+                    <el-select v-model="judgeA.rightAnswer" placeholder="正确选项">
+                        <el-option label="对" value="1"></el-option>
+                        <el-option label="错" value="0"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="课程">
+                    <el-select v-model="judgeA.courseId" placeholder="课程">
+                        <el-option v-for="(course,i) in courses" :key="course.courseId" :label="course.courseName"
+                                   :value="course.courseId"></el-option>
+                    </el-select>
+                </el-form-item>
+            </el-form>
+            <span slot="footer" class="dialog-footer">
+            <el-button @click="dialogAVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addJudge">添加题目</el-button>
+  </span>
+        </el-dialog>
+        <el-table
+                :data="judges"
+                style="width: 100%">
+            <el-table-column
+                    type="index">
+            </el-table-column>
+            <el-table-column
+                    label="题干"
+                    prop="stem">
+            </el-table-column>
+            <el-table-column
+                    label="正确答案"
+                    prop="rightAnswer">
+            </el-table-column>
+        </el-table>
+    </div>
+
+
+    <div>
+        <el-row style="text-align: right;">
+            <el-dropdown style="left: 5px" @command="handleCommand"
+                         placement="bottom-start">
+                <span class="el-dropdown-link">
+                课程<i class="el-icon-arrow-down el-icon--right"></i>
+                </span>
+                <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item v-for="(course,i) in courses" :key="course.courseId" :command="course.courseId">
+                        {{ course.courseName }}
+                    </el-dropdown-item>
+                </el-dropdown-menu>
+            </el-dropdown>
+            <el-button align="right" type="primary" @click="dialogAVisible = true">添加</el-button>
+            <el-button align="right" type="danger" icon="el-icon-delete" circle @click="deleteAnswers"></el-button>
+        </el-row>
+        <el-dialog
+                title="添加老师"
+                :visible.sync="dialogAVisible"
+                width="30%">
+            <el-form ref="form" :model="answerA" label-width="80px">
+                <el-form-item label="Dark">
+                </el-form-item>
+                <el-form-item label="题干">
+                    <el-input v-model="answerA.stem"></el-input>
+                </el-form-item>
+                <el-form-item label="正确答案">
+                    <el-input type="textarea" v-model="answerA.rightAnswer"></el-input>
+                </el-form-item>
+                <el-form-item label="课程">
+                    <el-select v-model="answerA.courseId" placeholder="正确选项">
+                        <el-option v-for="(course,i) in courses" :key="course.courseId" :label="course.courseName"
+                                   :value="course.courseId"></el-option>
+                    </el-select>
+                </el-form-item>
+            </el-form>
+            <span slot="footer" class="dialog-footer">
+            <el-button @click="dialogAVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addAnswer">添加题目</el-button>
+  </span>
+        </el-dialog>
+        <el-table
+                :data="answers"
+                style="width: 100%">
+            <el-table-column
+                    type="index">
+            </el-table-column>
+            <el-table-column
+                    label="题干"
+                    prop="stem">
+            </el-table-column>
+            <el-table-column
+                    label="正确答案"
+                    prop="rightAnswer">
+            </el-table-column>
+        </el-table>
+    </div>
+
+
+    <div>
+        <!--        选择题-->
+        <el-row>
+            <span class="question_title">选择题</span>
+            <el-button align="right" type="primary" icon="el-icon-plus" circle
+                       @click="dialogCVisible = true"></el-button>
+        </el-row>
+        <el-table
+                :data="paper.choices"
+                style="width: 100%">
+            <el-table-column type="expand">
+                <template slot-scope="props">
+                    <el-form label-position="left" inline class="demo-table-expand">
+                        <el-form-item label="选项：A">
+                            <span>{{ props.row.a }}</span>
+                        </el-form-item>
+                        <el-form-item label="选项：B">
+                            <span>{{ props.row.b }}</span>
+                        </el-form-item>
+                        <el-form-item label="选项：C">
+                            <span>{{ props.row.c }}</span>
+                        </el-form-item>
+                        <el-form-item label="选项：D">
+                            <span>{{ props.row.d }}</span>
+                        </el-form-item>
+                        <el-form-item label="正确答案">
+                            <span>{{ props.row.rightAnswer }}</span>
+                        </el-form-item>
+                    </el-form>
+                </template>
+            </el-table-column>
+            <el-table-column
+                    type="index">
+            </el-table-column>
+            <el-table-column
+                    label="题干"
+                    prop="stem">
+            </el-table-column>
+            <el-table-column
+                    label="正确答案"
+                    prop="rightAnswer">
+            </el-table-column>
+        </el-table>
+        <el-dialog
+                title="选择题"
+                :visible.sync="dialogCVisible"
+                width="30%">
+            <el-table
+                    :data="questions.choices"
+                    style="width: 100%"
+                    @selection-change="choiceSelectionChange">
+                <el-table-column
+                        type="selection"
+                        width="55">
+                </el-table-column>
+                <el-table-column type="expand">
+                    <template slot-scope="props">
+                        <el-form label-position="left" inline class="demo-table-expand">
+                            <el-form-item label="选项：A">
+                                <span>{{ props.row.a }}</span>
+                            </el-form-item>
+                            <el-form-item label="选项：B">
+                                <span>{{ props.row.b }}</span>
+                            </el-form-item>
+                            <el-form-item label="选项：C">
+                                <span>{{ props.row.c }}</span>
+                            </el-form-item>
+                            <el-form-item label="选项：D">
+                                <span>{{ props.row.d }}</span>
+                            </el-form-item>
+                            <el-form-item label="正确答案">
+                                <span>{{ props.row.rightAnswer }}</span>
+                            </el-form-item>
+                        </el-form>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        type="index">
+                </el-table-column>
+                <el-table-column
+                        label="题干"
+                        prop="stem">
+                </el-table-column>
+                <el-table-column
+                        label="正确答案"
+                        prop="rightAnswer">
+                </el-table-column>
+            </el-table>
+            <span slot="footer" class="dialog-footer">
+            <el-button @click="dialogAVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addChoice">添加题目</el-button>
+  </span>
+        </el-dialog>
+        <!--        判断题-->
+        <el-row>
+            <span class="question_title">判断题</span>
+            <el-button align="right" type="primary" icon="el-icon-plus" circle
+                       @click="dialogJVisible = true"></el-button>
+        </el-row>
+        <el-table
+                :data="judges"
+                style="width: 100%">
+            <el-table-column
+                    type="index">
+            </el-table-column>
+            <el-table-column
+                    label="题干"
+                    prop="stem">
+            </el-table-column>
+            <el-table-column
+                    label="正确答案"
+                    prop="rightAnswer">
+            </el-table-column>
+        </el-table>
+        <el-dialog
+                title="选择题"
+                :visible.sync="dialogJVisible"
+                width="30%">
+            <el-table
+                    :data="questions.judges"
+                    style="width: 100%"
+                    @selection-change="judgeSelectionChange">
+                <el-table-column
+                        type="selection"
+                        width="55">
+                </el-table-column>
+                <el-table-column
+                        type="index">
+                </el-table-column>
+                <el-table-column
+                        label="题干"
+                        prop="stem">
+                </el-table-column>
+                <el-table-column
+                        label="正确答案"
+                        prop="rightAnswer">
+                </el-table-column>
+            </el-table>
+            <span slot="footer" class="dialog-footer">
+            <el-button @click="dialogJVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addJudge">添加题目</el-button>
+  </span>
+        </el-dialog>
+        <!--        简答题-->
+        <el-row>
+            <span class="question_title">简答题</span>
+            <el-button align="right" type="primary" icon="el-icon-plus" circle
+                       @click="dialogAVisible = true"></el-button>
+        </el-row>
+        <el-table
+                :data="answers"
+                style="width: 100%">
+            <el-table-column
+                    type="index">
+            </el-table-column>
+            <el-table-column
+                    label="题干"
+                    prop="stem">
+            </el-table-column>
+            <el-table-column
+                    label="正确答案"
+                    prop="rightAnswer">
+            </el-table-column>
+        </el-table>
+        <el-dialog
+                title="选择题"
+                :visible.sync="dialogAVisible"
+                width="30%">
+            <el-table
+                    :data="questions.answers"
+                    style="width: 100%"
+                    @selection-change="answerSelectionChange">
+                <el-table-column
+                        type="selection"
+                        width="55">
+                </el-table-column>
+                <el-table-column
+                        type="index">
+                </el-table-column>
+                <el-table-column
+                        label="题干"
+                        prop="stem">
+                </el-table-column>
+                <el-table-column
+                        label="正确答案"
+                        prop="rightAnswer">
+                </el-table-column>
+            </el-table>
+            <span slot="footer" class="dialog-footer">
+            <el-button @click="dialogAVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addAnswer">添加题目</el-button>
+  </span>
+        </el-dialog>
+
+        <el-row style="text-align: center;">
+            <el-button align="right" type="primary" @click=setPaper>确认提交</el-button>
+            <el-button align="right" type="danger" @click="resetPaper">重置</el-button>
+        </el-row>
+    </div>
+
+
+    <div>
+        <el-row>
+            <el-button align="right" type="danger" icon="el-icon-delete" circle @click="deleteCourses"></el-button>
+            <el-button align="right" type="primary" @click="dialogVisible = true">新增</el-button>
+            <el-dialog
+                    title="添加课程"
+                    :visible.sync="dialogVisible"
+                    width="30%"
+            >
+                <el-form ref="form" :model="Book" label-width="80px">
+                    <el-form-item label="课程名称">
+                        <el-input v-model="courseName"></el-input>
+                    </el-form-item>
+                </el-form>
+                <span slot="footer" class="dialog-footer">
+    <el-button @click="dialogVisible = false">取 消</el-button>
+    <el-button type="primary" @click="_addBook">添加课程</el-button>
+  </span>
+            </el-dialog>
+        </el-row>
+        <el-table
+                :data="courses"
+                border
+                style="width: 100%">
+            <el-table-column
+                    type="index"
+                    width="50"
+                    prop="序号">
+            </el-table-column>
+            <el-table-column
+                    prop="name"
+                    label="试卷名称"
+                    width="180">
+            </el-table-column>
+            <el-table-column label="操作">
+                <template slot-scope="scope">
+                    <el-button
+                            size="mini"
+                            @click="handleEdit(scope.$index, scope.row)">课程信息
+                    </el-button>
+                    <el-button
+                            size="mini"
+                            @click="handleStudent(scope.$index, scope.row)">查看学生
+                    </el-button>
+                    <el-button
+                            size="mini"
+                            @click="handlePaper(scope.$index, scope.row)">查看试卷
+                    </el-button>
+
+                    <el-button
+                            size="mini"
+                            type="danger"
+                            @click="handleDelete(scope.$index, scope.row)">删除
+                    </el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+    </div>
+
+    <el-dialog
+            title="提示"
+            :visible.sync="dialogAddVisible"
+            width="50%"
+            center>
+        <el-table
+                :data="studentsElse"
+                style="width: 100%"
+                :default-sort="{prop: 'account', order: 'descending'}"
+                @selection-change="handleSelectionChange">
+            <el-table-column
+                    type="selection"
+                    width="55">
+            </el-table-column>
+            <el-table-column
+                    prop="account"
+                    label="学号"
+                    sortable
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="name"
+                    label="姓名"
+                    sortable
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="stuClass"
+                    label="班级"
+                    sortable
+                    width="180"
+            >
+            </el-table-column>
+        </el-table>
+        <span slot="footer" class="dialog-footer">
+    <el-button @click="stuDialogVisible = false">取 消</el-button>
+    <el-button type="primary" @click="addStudent">确 定</el-button>
+  </span>
+    </el-dialog>
+
+    <el-table
+            :data="students"
+            style="width: 100%"
+            :default-sort="{prop: 'account', order: 'descending'}"
+            @selection-change="handleSelectionChange">
+        <el-table-column
+                type="selection"
+                width="55">
+        </el-table-column>
+        <el-table-column
+                prop="account"
+                label="学号"
+                sortable
+                width="180">
+        </el-table-column>
+        <el-table-column
+                prop="name"
+                label="姓名"
+                sortable
+                width="180">
+        </el-table-column>
+        <el-table-column
+                prop="stuClass"
+                label="班级"
+                sortable
+                width="180"
+        >
+        </el-table-column>
+    </el-table>
+
+    <div>
+        <el-descriptions title="垂直带边框列表" direction="vertical" :column="4" border>
+            <template slot="extra">
+                <el-button type="primary" size="small">修改</el-button>
+            </template>
+            <el-descriptions-item label="姓名">18100000000</el-descriptions-item>
+            <el-descriptions-item label="用户名">kooriookami</el-descriptions-item>
+            <el-descriptions-item label="班级" :span="2">苏州市</el-descriptions-item>
+            <el-descriptions-item label="身份">
+                <el-tag size="small">学校</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="密码">江苏省苏州市吴中区吴中大道 1188 号</el-descriptions-item>
+            <el-descriptions-item label="性别">
+                <el-tag size="small">男</el-tag>
+            </el-descriptions-item>
+        </el-descriptions>
+        '
+        <el-button align="right" type="primary" @click=" dialogVisibleAdd = true">新增</el-button>
+        \n' +
+        '
+        <el-dialog
+        \n' +
+        ' title="添加用户"\n' +
+        ' :visible.sync="dialogVisibleAdd"\n' +
+        ' width="30%"\n' +
+        ' >\n' +
+        '
+        <el-form ref="form" :model="user" label-width="80px">\n' +
+            '
+            <el-form-item label="账号">\n' +
+                '
+                <el-input v-model="user.account"></el-input>
+                \n' +
+                '
+            </el-form-item>
+            \n' +
+            '
+            <el-form-item label="姓名">\n' +
+                '
+                <el-input v-model="user.name"></el-input>
+                \n' +
+                '
+            </el-form-item>
+            \n' +
+            '
+            <el-form-item label="班级">\n' +
+                '
+                <el-input v-model="user.stuClass"></el-input>
+                \n' +
+                '
+            </el-form-item>
+            \n' +
+            '
+            <el-form-item label="密码">\n' +
+                '
+                <el-input v-model="user.password"></el-input>
+                \n' +
+                '
+            </el-form-item>
+            \n' +
+            '
+            <el-form-item label="性别">\n' +
+                '
+                <el-select v-model="user.sex" placeholder="性别">\n' +
+                    '
+                    <el-option label="男" value="男"></el-option>
+                    \n' +
+                    '
+                    <el-option label="女" value="女"></el-option>
+                    \n' +
+                    '
+                </el-select>
+                \n' +
+                '
+            </el-form-item>
+            \n' +
+            '
+        </el-form>
+        \n' +
+        ' <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogVisibleAdd = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="addUser">添加用户</el-button>\n' +
+            '  </span>\n' +
+        '    </el-dialog>\n' +
+    </div>
+
+</div>
+items: [
+{ type: '', label: '标签一' },
+{ type: 'success', label: '标签二' },
+{ type: 'info', label: '标签三' },
+{ type: 'danger', label: '标签四' },
+{ type: 'warning', label: '标签五' }
+]
+<el-tag
+        type="success"
+        effect="dark"
+        v-if="">
+        正在编辑
+</el-tag>
+<el-tag
+        type="success"
+        effect="info"
+        v-if="">
+    已发布
+</el-tag>
+<el-tag
+        type="success"
+        effect="dark"
+        v-if="">
+    正在编辑
+</el-tag>
+
+<div>
+    <el-table
+            :data="users"
+            style="width: 100%"
+            :default-sort = "{prop: 'account', order: 'descending'}"
+    >
+        <el-table-column
+                type="index"
+                width="50">
+        </el-table-column>
+        <el-table-column
+                prop="account"
+                label="学号"
+                sortable
+                width="180">
+        </el-table-column>
+        <el-table-column
+                prop="name"
+                label="姓名"
+                sortable
+                width="180">
+        </el-table-column>
+        <el-table-column
+                fixed="right"
+                label="操作"
+                width="120">
+            <template slot-scope="scope">
+                <el-button
+                        @click="grade(scope.$index, scope.row)"
+                        type="text"
+                        size="small">
+                    批阅
+                </el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+</div>
+
+
+
+<script src="js/vue.js"></script>
+<script src="js/axios-0.18.0.js"></script>
+<!-- 引入样式 -->
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<!-- 引入组件库 -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<!-- Vue-router 路由模块 -->
+<script src="js/vue-router.js"></script>
+
+<script>
+    new Vue({
+        el: "#app",
+        data() {
+            return {}
+        },
+        methods: {
+            //菜单栏单击事件
+            click(key, keyPath) {
+                console.log(key, keyPath);
+                console.log(this.$route.path)
+                this.$confirm('检测到未保存的内容，是否在离开页面前保存修改？', '确认信息', {
+                    distinguishCancelAndClose: true,
+                    confirmButtonText: '保存',
+                    cancelButtonText: '放弃修改'
+                })
+                    .then(() => {
+                        this.$message({
+                            type: 'info',
+                            message: '保存修改'
+                        });
+                    })
+                    .catch(action => {
+                        this.$message({
+                            type: 'info',
+                            message: action === 'cancel'
+                                ? '放弃保存并离开页面'
+                                : '停留在当前页面'
+                        })
+                    });
+            },
+        },
+
+    })
+</script>
+</body>
+</html>

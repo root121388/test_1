@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam_2.dao.QuestionDao">
+    <resultMap id="choice" type="QuestionC">
+        <result column="right_answer" property="rightAnswer"></result>
+        <result column="cno" property="courseID"></result>
+    </resultMap>
+    <resultMap id="judge" type="QuestionJ">
+        <result column="right_answer" property="rightAnswer"></result>
+        <result column="cno" property="courseID"></result>
+    </resultMap>
+    <insert id="setPaperChoice">
+        insert into rel_question_exam(examId, choiceId)
+        values (#{examId}, #{id})
+    </insert>
+    <insert id="setPaperJudge">
+        insert into rel_question_exam(examId, judgeId)
+        values (#{examId}, #{id})
+    </insert>
+    <insert id="setPaperAnswer">
+        insert into rel_question_exam(examId, answerId)
+        values (#{examId}, #{id})
+    </insert>
+    <insert id="addChoice">
+        insert into question_choice
+        values (#{id}, #{stem}, #{answer}, #{rightAnswer}, #{a}, #{b}, #{c}, #{d}, #{courseID}, #{type})
+    </insert>
+    <insert id="addJudge">
+        insert into question_judge
+        values (#{id}, #{stem}, #{answer}, #{rightAnswer}, #{courseID}, #{type})
+    </insert>
+    <insert id="addAnswer">
+        insert into question_answer
+        values (#{id}, #{stem}, #{answer}, #{rightAnswer}, #{courseID}, #{type})
+    </insert>
+
+    <delete id="deletePaperQ">
+        delete
+        from rel_question_exam
+        where examId = #{id}
+    </delete>
+    <delete id="deleteQC">
+        delete from question_choice where id =#{id}
+    </delete>
+    <delete id="deleteQCRel">
+        delete from rel_question_exam where choiceId = #{id}
+    </delete>
+    <delete id="deleteQJ">
+        delete from question_judge where id =#{id}
+    </delete>
+    <delete id="deleteQJRel">
+        delete from rel_question_exam where judgeId = #{id}
+    </delete>
+    <delete id="deleteQA">
+        delete from question_answer where id =#{id}
+    </delete>
+    <delete id="deleteQARel">
+        delete from rel_question_exam where answerId = #{id}
+    </delete>
+    <select id="selectAllQCByCourse" resultMap="choice">
+        select * from question_choice
+        where cno in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+    <select id="selectChoiceByCourse" resultMap="choice">
+        select *
+        from question_choice
+        where cno = #{id}
+    </select>
+    <select id="selectAllQJByCourse" resultMap="judge">
+        select * from question_judge
+        where cno in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+    <select id="selectJudgeByCourse" resultMap="judge">
+        select *
+        from question_judge
+        where cno = #{id}
+    </select>
+    <select id="selectAllQAByCourse" resultMap="judge">
+        select * from question_answer
+        where cno in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+    <select id="selectAnswerByCourse" resultMap="judge">
+        select *
+        from question_answer
+        where cno = #{id}
+    </select>
+    <select id="selectChoiceByPaper" resultMap="choice">
+        select question_choice.id,
+               question_choice.stem,
+               question_choice.answer,
+               question_choice.right_answer,
+               question_choice.a,
+               question_choice.b,
+               question_choice.c,
+               question_choice.d,
+               question_choice.cno,
+            question_choice.type
+        from question_choice,
+             rel_question_exam
+        where examId = #{id}
+          and choiceId = question_choice.id
+    </select>
+    <select id="selectJudgeByPaper" resultMap="judge">
+        select question_judge.id,
+               question_judge.stem,
+               question_judge.answer,
+               question_judge.right_answer,
+               question_judge.cno,
+               question_judge.type
+        from question_judge,
+             rel_question_exam
+        where examId = #{id}
+          and judgeId = question_judge.id
+    </select>
+    <select id="selectAnswerByPaper" resultMap="judge">
+        select question_answer.id,
+               question_answer.stem,
+               question_answer.answer,
+               question_answer.right_answer,
+               question_answer.cno,
+               question_answer.type
+
+        from question_answer,
+             rel_question_exam
+        where examId = #{id}
+          and answerId = question_answer.id
+    </select>
+
+
+</mapper>

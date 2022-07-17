@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam_2.dao.UserDao">
+    <resultMap id="user" type="User">
+        <result column="class" property="stuClass"></result>
+    </resultMap>
+    <insert id="addUserLogin" useGeneratedKeys="true" keyProperty="id">
+        insert into user_login
+        values (null, #{account}, #{password}, #{role});
+    </insert>
+    <insert id="addUserInfo">
+        insert into user_info
+        values (#{id}, #{name}, #{stuClass}, #{sex});
+    </insert>
+    <update id="updateUserInfo">
+        update user_info
+        <set>
+            <if test="name!=null and name !=''">
+                name = #{name},
+            </if>
+            <if test="sex!=null and sex !=''">
+                sex = #{sex},
+            </if>
+            <if test="stuClass!=null and stuClass !=''">
+                class = #{stuClass},
+            </if>
+        </set>
+        where id = #{id};
+    </update>
+    <update id="updateUserLogin">
+        update user_login
+        <set>
+            <if test="account!=null and account !=''">
+                account = #{account},
+            </if>
+            <if test="password!=null and password !=''">
+                password = #{password},
+            </if>
+            <if test="role!=null and role !=''">
+                role = #{role},
+            </if>
+        </set>
+        where id = #{id};
+    </update>
+
+    <delete id="deleteUserInfo">
+        delete
+        from user_info
+        where id = #{id}
+    </delete>
+    <delete id="deleteUserLogin">
+        delete
+        from user_login
+        where id = #{id}
+    </delete>
+    <delete id="deleteUsers">
+        delete from user where id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <delete id="deleteStuFromUC">
+        delete from rel_course_user where cno = #{courseId} and user_Id=#{userId}
+    </delete>
+
+
+    <select id="login" resultType="User">
+        select user_info.id, account, password, role, name, sex
+        from user_login,
+             user_info
+        where account = #{account}
+          and password = #{password}
+          and role = #{role}
+          and user_login.id = user_info.id
+    </select>
+
+    <select id="selectByPage" resultMap="user">
+        select user_info.id, account, password, role, name, sex, class
+        from user_login,
+             user_info
+        where role = #{role}
+          and user_login.id = user_info.id
+            limit #{start}
+            , #{size}
+    </select>
+    <select id="selectTotal" resultType="java.lang.Integer">
+        select count(*)
+        from user_login,
+             user_info
+        where role = #{role}
+          and user_login.id = user_info.id
+    </select>
+    <select id="selectConditions" resultMap="user">
+        select user_info.id,account,password,role,name,sex,class from user_login,user_info
+        <where>
+            <if test="user.account!=null and user.account !=''">
+                and account like #{user.account}
+            </if>
+
+            <if test="user.id!=null and user.id !=''">
+                and id like #{user.id}
+            </if>
+            <if test="user.stuClass!=null and user.stuClass !=''">
+                and class like #{user.stuClass}
+            </if>
+            <if test="user.name!=null and user.name !=''">
+                and name like #{user.name}
+            </if>
+            <if test="user.sex!=null and user.sex !=''">
+                and sex = #{user.sex}
+            </if>
+            and user_login.id = user_info.id
+        </where>
+        limit #{start},#{size}
+    </select>
+    <select id="selectTotalCondition" resultType="java.lang.Integer">
+        select count(sex) from user_login,user_info
+        <where>
+            <if test="role1!=null and role1 !=''">
+                and role = #{role1}
+            </if>
+            <if test="user.id!=null and user.id !=''">
+                and id like #{user.id}
+            </if>
+            <if test="user.name!=null and user.name !=''">
+                and name like #{user.name}
+            </if>
+            <if test="user.sex!=null and user.sex !=''">
+                and sex = #{user.sex}
+            </if>
+            and user_login.id = user_info.id
+        </where>
+    </select>
+    <select id="selectStuByCourse" resultMap="user">
+        select user_info.id, account, password, role, name, sex, class
+        from user_info,
+             user_login,
+             rel_course_user
+        where user_info.id = user_login.id
+          and user_info.id = rel_course_user.user_id
+          and cno = #{id}
+          and role = 2
+
+    </select>
+    <select id="selectNotInCourse" resultMap="user">
+        select user_info.id,account,password,role,name,sex,class
+        from user_info,user_login
+        where user_info.id=user_login.id
+        and role = 2
+        and user_info.id not in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </select>
+    <select id="selectAllStu" resultMap="user">
+        select user_info.id, account, password, role, name, sex, class
+        from user_info,
+             user_login
+        where user_info.id = user_login.id
+          and role = 2
+    </select>
+    <select id="selectInfo" resultMap="user">
+        select user_info.id, account, password, role, name, sex, class
+        from user_info,
+             user_login
+        where user_info.id = user_login.id
+          and user_info.id = #{id}
+    </select>
+    <select id="selectByPFromRecord" resultMap="user">
+        select user_login.id, account, password, role, name, sex, class
+        from record,
+             user_login,
+             user_info
+        where user_info.id = user_login.id
+          and record.userId = user_login.id
+          and state = 2
+          and examId = #{id}
+    </select>
+
+
+</mapper>

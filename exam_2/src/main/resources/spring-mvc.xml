@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+       http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd">
+
+    <!--    Controller层的组件扫描-->
+    <context:component-scan base-package="com.exam_2.controller"></context:component-scan>
+
+    <!--对静态资源的访问  -->
+    <mvc:default-servlet-handler />
+    <mvc:annotation-driven/>
+
+<!--    <mvc:annotation-driven>-->
+<!--        &lt;!&ndash; 处理请求时返回json字符串的中文乱码问题 &ndash;&gt;-->
+<!--        <mvc:message-converters register-defaults="true">-->
+<!--            <bean class="org.springframework.http.converter.StringHttpMessageConverter">-->
+<!--                <constructor-arg value="UTF-8" />-->
+<!--            </bean>-->
+<!--            &lt;!&ndash;处理时区问题&ndash;&gt;-->
+<!--            <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">-->
+<!--                <property name="objectMapper">-->
+<!--                    <bean class="com.fasterxml.jackson.databind.ObjectMapper">-->
+<!--                        &lt;!&ndash; 处理responseBody 里面日期类型 &ndash;&gt;-->
+<!--                        <property name="dateFormat">-->
+<!--                            <bean class="java.text.SimpleDateFormat">-->
+<!--                                <constructor-arg type="java.lang.String" value="yyyy-MM-dd HH:mm:ss" />-->
+<!--                            </bean>-->
+<!--                        </property>-->
+<!--                        &lt;!&ndash; 时区指定 &ndash;&gt;-->
+<!--                        <property name="timeZone" value="GMT+8" />-->
+<!--                        &lt;!&ndash; 为null字段时不显示 &ndash;&gt;-->
+<!--                    </bean>-->
+<!--                </property>-->
+<!--            </bean>-->
+<!--        </mvc:message-converters>-->
+<!--    </mvc:annotation-driven>-->
+    <!--配置处理器映射器-->
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+        <property name="messageConverters">
+            <list>
+                <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                </bean>
+            </list>
+        </property>
+    </bean>
+    <!--内部资源视图解析器-->
+    <!--    拦截器-->
+    <!--    <mvc:interceptors>-->
+    <!--        <mvc:interceptor>-->
+    <!--            <mvc:mapping path="/html/index.html"/>-->
+    <!--            <bean class="com.spring_3.interceptor.Interceptor"/>-->
+    <!--        </mvc:interceptor>-->
+    <!--    </mvc:interceptors>-->
+</beans>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:margin="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>在线考试系统-登录</title>
+    <link href="../css/login.css" rel="stylesheet">
+</head>
+<body>
+<div id="app">
+    <el-form :model="user" status-icon :rules="rules" ref="user" label-width="100px" class="loginDemo" size="small">
+        <el-form-item label="用户名" prop="account">
+            <el-input type="username" v-model="user.account" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+            <el-input type="password" v-model="user.password" autocomplete="off"></el-input>
+        </el-form-item>
+        </el-form-item>
+        <el-form-item label="角色" prop="role">
+            <el-select v-model="user.role" placeholder="请选择角色">
+                <el-option label="管理员" value="0"></el-option>
+                <el-option label="老师" value="1"></el-option>
+                <el-option label="学生" value="2"></el-option>
+            </el-select>
+        </el-form-item>
+        <el-form-item label="记住密码">
+            <el-switch v-model="remember" active-value="1" inactive-value="0"></el-switch>
+        </el-form-item>
+        <el-form-item>
+            <el-button @click="resetForm('ruleForm')">注册</el-button>
+            <el-button type="primary" @click="login('user')">登录</el-button>
+        </el-form-item>
+    </el-form>
+</div>
+
+
+<script src="../js/vue.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<!-- 引入样式 -->
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<!-- 引入组件库 -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<!-- Vue-router 路由模块 -->
+<script src="../js/vue-router.js"></script>
+<script>
+
+    let a = new Vue({
+        el: "#app",
+        data() {
+            var validatePass = (rule, value, callback) => {
+                if (value === '') {
+                    callback(new Error('请输入密码'));
+                }
+            };
+            var validatePass2 = (rule, value, callback) => {
+                if (value === '') {
+                    callback(new Error('请输入用户名'));
+                } else {
+                    callback();
+                }
+            };
+            return {
+                remember: 0,
+                user: {
+                    id: '',
+                    account: '',
+                    password: '',
+                    name: '',
+                    role: '',
+                    sex: '',
+                    stuClass: '',
+                },
+                users: [],
+                ruleForm: {
+                    pass: '',
+                    account: '',
+                    role: ''
+                },
+                rules: {
+                    account: [
+                        {validator: validatePass2, trigger: 'blur'}
+                    ],
+                    password: [
+                        {validator: validatePass, trigger: 'blur'}
+                    ],
+
+
+                }
+            }
+        },
+        methods: {
+            init() {
+
+                if (localStorage.getItem("loop") == '1') {
+                    this.user.account = localStorage.getItem("account")
+                    this.user.password = localStorage.getItem("password")
+                }
+            },
+            login(formName) {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/login",
+                    headers: {'Content-Type': 'application/json;charset=UTF-8'},
+                    data: this.user
+                }).then(resp => {
+                    if (resp.data != '') {
+                        this.user = resp.data
+                        sessionStorage.setItem("userId", this.user.id + "");
+                        sessionStorage.setItem("loop", this.remember + "");
+                        sessionStorage.setItem("username", this.user.name);
+                        sessionStorage.setItem("state", this.user.role + "");
+
+                        localStorage.setItem("loop", this.remember + "")
+                        if (this.remember == '1') {
+                            localStorage.setItem("loop", this.remember + "")
+                            localStorage.setItem("account", this.user.account + "")
+                            localStorage.setItem("password", this.user.password + "")
+                        }
+                        if (this.user.role == 2) {
+                            location.href = "http://localhost:8080/exam_2/html/index.html"
+                        }
+                        if (this.user.role == 0 || this.user.role == 1) {
+                            location.href = "http://localhost:8080/exam_2/html/management.html"
+                        }
+                    } else {
+                        this.$message({
+                            message: '用户名或密码不正确',
+                            type: 'warning'
+                        });
+                        this.$refs[formName].resetFields();
+                    }
+
+                })
+            },
+            resetForm(formName) {
+                this.remember = 0
+                this.$refs[formName].resetFields();
+            }
+        },
+        mounted() {
+            this.init();
+        }
+
+    })
+</script>
+</body>
+</html>

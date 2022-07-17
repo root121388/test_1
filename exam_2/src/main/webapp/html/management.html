@@ -1,0 +1,2937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>后台管理</title>
+</head>
+<body>
+<div id="app">
+    <el-container style="height: 1000px; border: 1px solid #eee">
+        <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
+            <el-menu :default-openeds="['1', '3']"
+                     :default-active="this.$route.path"
+                     @select="click"
+                     router>
+                <el-submenu index="1">
+                    <template slot="title"><i class="el-icon-user-solid"></i>基本管理</template>
+                    <el-menu-item-group>
+                        <el-menu-item :index="'/user/'+1" v-if="role==0">老师管理</el-menu-item>
+                        <el-menu-item :index="'/user/'+2">学生管理</el-menu-item>
+                        <el-menu-item index="/course">课程管理</el-menu-item>
+                        <el-menu-item index="/paper1">试卷管理</el-menu-item>
+                    </el-menu-item-group>
+                </el-submenu>
+                <el-submenu index="2">
+                    <template slot="title"><i class="el-icon-menu"></i>成绩管理</template>
+                    <el-menu-item-group>
+                        <el-menu-item index="/paper2">试卷批阅</el-menu-item>
+                        <el-menu-item index="/paper2">成绩分析</el-menu-item>
+                    </el-menu-item-group>
+                </el-submenu>
+                <el-submenu index="3">
+                    <template slot="title"><i class="el-icon-setting"></i>题库管理</template>
+                    <el-menu-item-group>
+                        <el-menu-item index="/choice">选择题</el-menu-item>
+                        <el-menu-item index="/judge">判断题</el-menu-item>
+                        <el-menu-item index="/answer">简答题</el-menu-item>
+                    </el-menu-item-group>
+                </el-submenu>
+            </el-menu>
+        </el-aside>
+        <el-container>
+            <el-header style="text-align: right; font-size: 20px">
+                <el-dropdown @command="handleCommand">
+                    <i class="el-icon-setting" style="margin-right: 20px"></i>
+                    <el-dropdown-menu slot="dropdown">
+                        <el-dropdown-item command="5">个人信息</el-dropdown-item>
+                        <el-dropdown-item command="6">注销</el-dropdown-item>
+                    </el-dropdown-menu>
+                </el-dropdown>
+                <span>{{ username }}</span>
+            </el-header>
+
+            <el-main>
+                <!-- 这是 vue-router 提供的元素，专门用来
+    当作占位符的，将来，路由规则，匹配到的组件，就会展示到这个 router-view 中去 -->
+                <router-view v-if="showRouterView"></router-view>
+
+            </el-main>
+        </el-container>
+    </el-container>
+</div>
+<style>
+    .el-header {
+        background-color: #B3C0D1;
+        color: #333;
+        line-height: 60px;
+    }
+
+    .el-aside {
+        color: #333;
+    }
+
+    .demo-table-expand {
+        font-size: 0;
+    }
+
+    .demo-table-expand label {
+        width: 90px;
+        color: #99a9bf;
+    }
+
+    .demo-table-expand .el-form-item {
+        margin-right: 0;
+        margin-bottom: 0;
+        width: 50%;
+    }
+
+    .el-dropdown-link {
+        cursor: pointer;
+        color: #409EFF;
+    }
+
+    .el-icon-arrow-down {
+        font-size: 12px;
+    }
+</style>
+<script src="../js/vue.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<!-- 引入样式 -->
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<!-- 引入组件库 -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<!-- Vue-router 路由模块 -->
+<script src="../js/vue-router.js"></script>
+<script>
+    //学生管理
+    let user = Vue.component('teacher', {
+        data: function () {
+            return {
+                state: 0,
+                //分页查询
+                currentPage: 1,//当前页码
+                pageSize: 5,//每页显示条数
+                totalCount: 5,//总条数
+
+                users: [],
+                userAdd: {
+                    id: '',
+                    account: '',
+                    name: '',
+                    password: '',
+                    role: '2',
+                    sex: '',
+                    stuClass: '',
+                },
+                userSelect: {
+                    id: '',
+                    account: '',
+                    name: '',
+                    password: '',
+                    sex: '',
+                    role: '',
+                    stuClass: '',
+                },
+                userDelete: {
+                    id: '',
+                    account: '',
+                    name: '',
+                    password: '',
+                    sex: '',
+                    role: '',
+                    stuClass: '',
+                },
+                userEdit: {
+                    id: '',
+                    account: '',
+                    name: '',
+                    password: '',
+                    sex: '',
+                    role: '',
+                    stuClass: '',
+                },
+
+                //确认是否模糊查询  0 否 1 是
+                loop: 0,
+                //添加窗口是否显示
+                dialogVisibleAdd: false,
+                dialogVisibleUpdate: false,
+            }
+        },
+        methods: {
+            init() {
+            },
+            selectConfirm() {
+                if (this.loop === 0) {
+                    this.selectAllUser();
+                } else {
+                    this.onSubmit();
+                }
+            },
+            selectAllUser() {
+                console.log(this.$route.params.role + "user")
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/page?role=" + this.$route.params.role + "&currentPage=" + this.currentPage + "&size=" + this.pageSize,
+                    headers: {'Content-Type': 'application/json;charset=UTF-8'},
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.users = resp.data.rows;
+                    this.totalCount = resp.data.totalCount;
+                })
+            },
+            //每页显示条数改变
+            handleSizeChange(val) {
+                console.log(val);
+                this.pageSize = val;
+                this.currentPage = 1;
+                this.selectConfirm();
+
+            },
+            //页码改变
+            handleCurrentChange(val) {
+                console.log(`当前页: ${val}`);
+                this.currentPage = val;
+                this.selectConfirm();
+            },
+            //编辑
+            edit(index, row) {
+                this.userEdit = row;
+                this.dialogVisibleUpdate = true;
+            },
+            //确认修改
+            confirmEdit() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/edit",
+                    headers: {'Content-Type': 'application/json;charset=UTF-8'},
+                    data: this.userEdit,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    if (resp.data = true) {
+                        this.dialogVisibleUpdate = false;
+                        this.selectAllUser();
+                        this.$message({
+                            type: 'success',
+                            message: '修改成功'
+                        });
+                    }
+                })
+            },
+            //单个删除
+            delete1(index, row) {
+
+                this.userDelete = row
+                console.log(this.userDelete)
+                this.$confirm('是否删除？？？？？', '确认信息', {
+                    distinguishCancelAndClose: true,
+                    confirmButtonText: '确认删除',
+                    cancelButtonText: '取消'
+                })
+                    .then(() => {
+                        axios({
+                            method: 'post',
+                            url: "http://localhost:8080/exam_2/user/delete",
+                            headers: {'Content-Type': 'application/json;charset=UTF-8'},
+                            data: this.userDelete,
+                        }).then(resp => {
+                            //获取数据  设置表格数据 设置总记录数
+                            console.log(resp.data);
+                            this.selectAllUser();
+                        })
+
+                        this.$message({
+                            type: 'success',
+                            message: '删除成功'
+                        });
+                    })
+                    .catch(action => {
+                        this.$message({
+                            type: 'info',
+                            message: '取消删除'
+                        })
+                    });
+
+            },
+            //选中框
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+                console.log(this.multipleSelection)
+            },
+            //条件查询
+            onSubmit() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/condition?role=1&currentPage=" + this.currentPage + "&size=" + this.pageSize,
+                    headers: {'Content-Type': 'application/json;charset=UTF-8'},
+                    data: this.userSelect,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.users = resp.data.rows;
+                    this.totalCount = resp.data.totalCount;
+                    this.loop = 1;
+                })
+            },
+            //批量删除
+            deleteUsers() {
+                this.$confirm('此操作将永久删除学生, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    axios({
+                        method: 'post',
+                        url: "http://localhost:8080/exam_2/user/deleteMulti",
+                        headers: {'Content-Type': 'application/json;charset=UTF-8'},
+                        data: this.multipleSelection
+                    }).then(resp => {
+                        this.selectConfirm();
+                        this.$message({
+                            showClose: true,
+                            message: '删除成功',
+                            type: 'success'
+                        });
+                    })
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            },
+            addUser() {
+
+                console.log(this.userAdd)
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/addUser",
+                    headers: {'Content-Type': 'application/json;charset=UTF-8'},
+                    data: this.userAdd,
+                }).then(resp => {
+                    //获取数据  设置表格数据
+                    console.log(resp.data);
+                    this.dialogVisibleAdd = false;
+                    this.selectAllUser();
+                    this.$message({
+                        type: 'success',
+                        message: '添加成功'
+                    });
+                })
+            }
+            //添加
+
+        },
+        mounted() {
+            this.selectAllUser();
+        },
+        template: '<div>\n' +
+            ' <el-form :inline="true" :model="userSelect" class="demo-form-inline">\n' +
+            '        <el-form-item label="账号">\n' +
+            '            <el-input v-model="userSelect.account" placeholder="账号"></el-input>\n' +
+            '        </el-form-item>\n' +
+            '        <el-form-item label="姓名">\n' +
+            '            <el-input v-model="userSelect.name" placeholder="姓名"></el-input>\n' +
+            '        </el-form-item>\n' +
+            '        <el-form-item label="班级">\n' +
+            '            <el-input v-model="userSelect.stuClass" placeholder="班级"></el-input>\n' +
+            '        </el-form-item>\n' +
+            '        <el-form-item label="性别">\n' +
+            '            <el-select v-model="userSelect.sex" placeholder="性别">\n' +
+            '                <el-option label="男" value="男"></el-option>\n' +
+            '                <el-option label="女" value="女"></el-option>\n' +
+            '            </el-select>\n' +
+            '        </el-form-item>\n' +
+            '        <el-form-item>\n' +
+            '            <el-button type="primary" @click="onSubmit()">查询</el-button>\n' +
+            '        </el-form-item>\n' +
+            '    </el-form>' +
+            '    <el-button align="right" type="danger" icon="el-icon-delete" circle @click="deleteUsers"></el-button>\n' +
+            '    <el-button align="right" type="primary" @click=" dialogVisibleAdd = true">新增</el-button>\n' +
+            '    <el-dialog\n' +
+            '            title="添加学生"\n' +
+            '            :visible.sync="dialogVisibleAdd"\n' +
+            '            width="50%"\n' +
+            '    >\n' +
+            '        <el-form ref="form" :model="userAdd" label-width="80px">\n' +
+            '            <el-form-item label="账号">\n' +
+            '                <el-input v-model="userAdd.account"></el-input>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="姓名">\n' +
+            '                <el-input v-model="userAdd.name"></el-input>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="班级">\n' +
+            '                <el-input v-model="userAdd.stuClass"></el-input>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="密码">\n' +
+            '                <el-input v-model="userAdd.password"></el-input>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="性别">\n' +
+            '            <el-select v-model="userAdd.sex" placeholder="性别">\n' +
+            '                <el-option label="男" value="男"></el-option>\n' +
+            '                <el-option label="女" value="女"></el-option>\n' +
+            '            </el-select>\n' +
+            '            </el-form-item>\n' +
+            '\n' +
+            '        </el-form>\n' +
+            '        <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogVisibleAdd = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="addUser">添加用户</el-button>\n' +
+            '  </span>\n' +
+            '    </el-dialog>\n' +
+            '    <template>\n' +
+            '        <el-table\n' +
+            '                :data="users"\n' +
+            '                stripe\n' +
+            '                style="width: 100%"  @selection-change="handleSelectionChange"' +
+            ':default-sort = "{prop: \'account\', order: \'descending\'}">\n' +
+            '            <el-table-column\n' +
+            '                    type="selection"\n' +
+
+            '                    width="55">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="account"' +
+            '                    label="账号"\n' +
+            '                    width="180" sortable>\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="name"\n' +
+            '                    label="姓名"\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="stuClass"\n' +
+            '                    label="班级"\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="sex"\n' +
+            '                    label="性别"\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="操作">\n' +
+            '                <template slot-scope="scope">\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n' +
+            '                            @click="edit(scope.$index, scope.row)">编辑</el-button>\n' +
+            '<el-button\n' +
+            '          size="mini"\n' +
+            '          type="danger"\n' +
+            '          @click="delete1(scope.$index, scope.row)">删除</el-button>' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '    </template>\n' +
+            '<el-dialog\n' +
+            '            title="信息修改"\n' +
+            '            :visible.sync=" dialogVisibleUpdate"\n' +
+            '            width="50%"\n' +
+            '    >\n' +
+            '        <el-form ref="form" :model="userEdit" label-width="80px">\n' +
+            '            <el-form-item label="账号">{{ userEdit.account }}\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="班级">\n' +
+            '                <el-input v-model="userEdit.stuClass"></el-input>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="姓名">\n' +
+            '                <el-input v-model="userEdit.name"></el-input>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="密码">\n' +
+            '                <el-input v-model="userEdit.password"></el-input>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="性别">\n' +
+            '                <el-select v-model="userEdit.sex" placeholder="性别">\n' +
+            '                    <el-option label="男" value="男"></el-option>\n' +
+            '                    <el-option label="女" value="女"></el-option>\n' +
+            '                </el-select>\n' +
+            '            </el-form-item>\n' +
+            '\n' +
+            '\n' +
+            '        </el-form>\n' +
+            '        <span slot="footer" class="dialog-footer">\n' +
+            '    <el-button @click="dialogVisibleUpdate = false">取 消</el-button>\n' +
+            '    <el-button type="primary" @click="confirmEdit()">修改</el-button>\n' +
+            '  </span>\n' +
+            '    </el-dialog>' +
+            '    <el-pagination\n' +
+            '            @size-change="handleSizeChange"\n' +
+            '            @current-change="handleCurrentChange"\n' +
+            '            :current-page="currentPage"\n' +
+            '            :page-sizes="[5, 10, 15, 20]"\n' +
+            '            :page-size="pageSize"\n' +
+            '            layout=" total,sizes, prev, pager, next, jumper"\n' +
+            '            :total="totalCount" style="text-align: center">\n' +
+            '    </el-pagination>\n' +
+            '</div>\n',
+
+    })
+    //课程管理
+    let course = Vue.component('course', {
+        data: function () {
+            return {
+                dialogAVisible: false,
+                dialogEVisible: false,
+                stuDialogVisible: false,
+                dialogAddVisible: false,
+                userId: '',
+                courseId: '',
+                id:'',
+                courseA: {
+                    courseId: '',
+                    courseName: '',
+                },
+                courseE: {
+                    courseId: '',
+                    courseName: '',
+                },
+                courses: [],
+
+                students: [],
+                studentsElse: [],
+                studentsSelect: [],
+
+            }
+        },
+        methods: {
+            init() {
+                //查询所有课程
+                this.userId = sessionStorage.getItem("userId");
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/selectByUser?userId=" + this.userId,
+                }).then(resp => {
+                    console.log(resp.data);
+                    this.courses = resp.data;
+                })
+            },
+            addCourse() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/addCourse?userId=" + this.userId,
+                    data: this.courseA
+                }).then(resp => {
+                    console.log(resp.data);
+                    this.dialogAVisible = false
+                    this.init();
+                })
+            },
+
+            handleEdit(index, row) {
+                this.courseE = row;
+                this.dialogEVisible = true;
+
+            },
+            editCourse() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/update",
+                    data: this.courseE
+                }).then(resp => {
+
+                    this.dialogEVisible = false
+                    this.init();
+                })
+            },
+            selectStudent() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/selectStuByCourse?courseId=" + this.courseId,
+                }).then(resp => {
+                    this.students = resp.data;
+                })
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/selectNotInCourse?courseId=" + this.courseId,
+                }).then(resp => {
+                    this.studentsElse = resp.data;
+                })
+            },
+            handleStu(index, row) {
+                console.log(row.courseId)
+                this.courseId = row.courseId;
+                this.stuDialogVisible = true;
+                this.selectStudent();
+            },
+            SelectionChange(rows) {
+                this.studentsSelect = rows;
+            },
+            handleSelectionChange(rows) {
+                this.studentsSelect = rows;
+            },
+            addStudent() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/addStu?courseId=" + this.courseId,
+                    data: this.studentsSelect,
+                }).then(resp => {
+                    this.selectStudent();
+                    this.dialogAddVisible = false;
+                })
+
+            },
+            handlePaper(index, row) {
+                sessionStorage.setItem("courseId", row.courseId);
+                this.$router.push('/paper1')
+            },
+            deleteCourse(index, row) {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/deleteCourse?courseId="+row.courseId,
+                }).then(resp => {
+                    this.$message({
+                        type: 'success',
+                        message: '删除成功'
+                    });
+                    this.init();
+                })
+            },
+
+            deleteStudent(index, row){
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/deleteStu?userId=" + row.id+"&courseId="+this.courseId,
+                }).then(resp => {
+                    this.$message({
+                        type: 'success',
+                        message: '删除成功'
+                    });
+                    this.selectStudent();
+                })
+            },
+
+        },
+        mounted() {
+            this.init();
+        },
+        template: '<div>\n' +
+            '        <el-row >\n' +
+            '            <el-button align="right" type="primary" @click="dialogAVisible = true">新增</el-button>\n' +
+            '            <el-dialog\n' +
+            '                    title="添加课程"\n' +
+            '                    :visible.sync="dialogAVisible"\n' +
+            '                    width="30%"\n' +
+            '            >\n' +
+            '                <el-form ref="form" :model="courseA" label-width="80px">\n' +
+            '                    <el-form-item label="课程名称">\n' +
+            '                        <el-input v-model="courseA.courseName"></el-input>\n' +
+            '                    </el-form-item>\n' +
+            '                </el-form>\n' +
+            '                <span slot="footer" class="dialog-footer">\n' +
+            '    <el-button @click="dialogAVisible = false">取 消</el-button>\n' +
+            '    <el-button type="primary" @click="addCourse">添加课程</el-button>\n' +
+            '  </span>\n' +
+            '            </el-dialog>\n' +
+            '        </el-row>\n' +
+            '        <el-table\n' +
+            '                :data="courses"\n' +
+            '                border\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index"\n' +
+            '                    width="50"\n' +
+            '                    prop="序号">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="courseName"\n' +
+            '                    label="课程名称"\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="操作">\n' +
+            '                <template slot-scope="scope">\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n' +
+            '                            @click="handleEdit(scope.$index, scope.row)">课程信息\n' +
+            '                    </el-button>\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n' +
+            '                            @click="handleStu(scope.$index, scope.row)">查看学生\n' +
+            '                    </el-button>\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n' +
+            '                            @click="handlePaper(scope.$index, scope.row)">查看试卷\n' +
+            '                    </el-button>\n' +
+            '                    \n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n' +
+            '                            type="danger"\n' +
+            '                            @click="deleteCourse(scope.$index, scope.row)">删除\n' +
+            '                    </el-button>\n' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '            <el-dialog\n' +
+            '                    title="查看课程"\n' +
+            '                    :visible.sync="dialogEVisible"\n' +
+            '                    width="30%"\n' +
+            '            >\n' +
+            '                <el-form ref="form" :model="courseE" label-width="80px">\n' +
+            '                    <el-form-item label="课程名称">\n' +
+            '                        <el-input v-model="courseE.courseName"></el-input>\n' +
+            '                    </el-form-item>\n' +
+            '                </el-form>\n' +
+            '                <span slot="footer" class="dialog-footer">\n' +
+            '    <el-button @click="dialogEVisible = false">取 消</el-button>\n' +
+            '    <el-button type="primary" @click="editCourse">修改课程</el-button>\n' +
+            '  </span>\n' +
+            '            </el-dialog>\n' +
+            ' <el-dialog\n' +
+            '            title="查看学生"\n' +
+            '            :visible.sync="stuDialogVisible"\n' +
+            '            width="80%"\n' +
+            '            center>\n' +
+            '        <el-button align="right" type="primary" icon="el-icon-plus" circle\n' +
+            '                   @click="dialogAddVisible = true"></el-button>\n' +
+            '        <el-table\n' +
+            '                :data="students"\n' +
+            '                style="width: 100%"\n' +
+            '                :default-sort = "{prop: \'account\', order: \'descending\'}"\n' +
+            '                @selection-change="SelectionChange">\n' +
+            '            <el-table-column\n' +
+            '                    type="selection"\n' +
+            '                    width="55">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="account"\n' +
+            '                    label="学号"\n' +
+            '                    sortable\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="name"\n' +
+            '                    label="姓名"\n' +
+            '                    sortable\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="stuClass"\n' +
+            '                    label="班级"\n' +
+            '                    sortable\n' +
+            '                    width="180"\n' +
+            '            >\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="操作">\n' +
+            '                <template slot-scope="scope">\n' +
+                   '                    <el-button\n' +
+            '                            size="mini"\n' +
+            '                            type="danger"\n' +
+            '                            @click="deleteStudent(scope.$index, scope.row)">删除\n' +
+            '                    </el-button>\n' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '        <span slot="footer" class="dialog-footer">\n' +
+            '    <el-button @click="stuDialogVisible = false">取 消</el-button>\n' +
+            '    <el-button type="primary" @click="stuDialogVisible = false">确 定</el-button>\n' +
+            '  </span>\n' +
+            '    </el-dialog>' +
+            '    <el-dialog\n' +
+            '            title="提示"\n' +
+            '            :visible.sync="dialogAddVisible"\n' +
+            '            width="50%"\n' +
+            '            center>\n' +
+            '        <el-table\n' +
+            '                :data="studentsElse"\n' +
+            '                style="width: 100%"\n' +
+            '                :default-sort = "{prop: \'account\', order: \'descending\'}"\n' +
+            '                @selection-change="handleSelectionChange">\n' +
+            '            <el-table-column\n' +
+            '                    type="selection"\n' +
+            '                    width="55">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="account"\n' +
+            '                    label="学号"\n' +
+            '                    sortable\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="name"\n' +
+            '                    label="姓名"\n' +
+            '                    sortable\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="stuClass"\n' +
+            '                    label="班级"\n' +
+            '                    sortable\n' +
+            '                    width="180"\n' +
+            '            >\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '        <span slot="footer" class="dialog-footer">\n' +
+            '    <el-button @click="stuDialogVisible = false">取 消</el-button>\n' +
+            '    <el-button type="primary" @click="addStudent">确 定</el-button>\n' +
+            '  </span>\n' +
+            '    </el-dialog>' +
+            '    </div>',
+    })
+    //试卷管理
+    let paper1 = Vue.component('paper', {
+        data: function () {
+            return {
+                start1:'',
+                courses: [],
+                courseName: '课程',
+                courseId: '',
+                dialogVisible: false,
+                dialogEVisible: false,
+                userId: '',
+                papers: [],
+                paper: {
+                    id: '',
+                    paperName: '',
+                    time: '',
+                    startTime:'',
+                    courseId: '',
+                    courseName: '',
+                    state: 0,
+                    loop:'',
+                    avg:'',
+                },
+                paperEdit: {
+                    id: '',
+                    paperName: '',
+                    time: '',
+                    startTime:'',
+                    courseId: '',
+                    courseName: '',
+                    state: 0,
+                    loop:'',
+                    avg:'',
+                }
+            }
+        },
+        methods: {
+            checkPaper() {
+                this.userId = sessionStorage.getItem("userId");
+                console.log(this.userId)
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/paper/checkByT?userId=" + this.userId,
+                }).then(resp => {
+                    this.papers = resp.data;
+                })
+
+            },
+            //编辑试卷
+            editPaper(index, row){
+                this.dialogEVisible=true;
+                this.paperEdit=row;
+                console.log(this.paperEdit)
+
+            },
+            editConfirm(){
+                this.$confirm('试卷修改, 是否继续?', '修改确认', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    axios({
+                        method: 'post',
+                        url: "http://localhost:8080/exam_2/paper/update",
+                        data: this.paperEdit,
+                    }).then(resp => {
+                        this.$message({
+                            type: 'success',
+                            message: '编辑成功!'
+                        });
+                        this.dialogEVisible=false
+                    })
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消编辑'
+                    });
+                });
+
+            },
+            //组卷
+            handleEdit(index, row) {
+                sessionStorage.setItem("paperId", row.id);
+                this.$router.push('/editPaper')
+
+            },
+            //删除试卷
+            handleDelete(index, row) {
+                this.$confirm('试卷删除, 是否继续?', '删除确认', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    axios({
+                        method: 'post',
+                        url: "http://localhost:8080/exam_2/paper/delete?paperId="+row.id,
+                    }).then(resp => {
+                        this.$message({
+                            type: 'success',
+                            message: '删除成功!'
+                        });
+                        this.checkPaper();
+                    })
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除 '
+                    });
+                });
+            },
+            addPaper() {
+                console.log(this.paper)
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/paper/addPaper",
+                    data: this.paper,
+                }).then(resp => {
+                    this.dialogVisible = false;
+                    this.checkPaper()
+
+                })
+            },
+            init() {
+                //为下拉菜单查询所有课程
+                this.userId = sessionStorage.getItem("userId");
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/selectByUser?userId=" + this.userId,
+                }).then(resp => {
+                    this.courses = resp.data;
+                })
+            },
+            handleCommand(command) {
+
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/paper/selectByCourse?courseId=" + command,
+                }).then(resp => {
+                    this.papers = resp.data;
+                })
+            },
+            publishPaper(index, row) {
+                //消息弹框
+                this.$confirm(`${row.paperName}即将发布, 是否继续?`, '发布确认', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    this.papers[index].state = 1;
+                    axios({
+                        method: 'post',
+                        url: "http://localhost:8080/exam_2/paper/publish?id=" + row.id,
+                    }).then(resp => {
+                        this.$message({
+                            type: 'success',
+                            message: '发布成功!'
+                        });
+                        this.checkPaper();
+                    })
+
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消发布'
+                    });
+                });
+
+            },
+            undoPublish(index, row) {
+                this.$confirm(`${row.paperName}即将撤回发布, 是否继续?`, '撤回确认', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    this.papers[index].state = 1;
+                    axios({
+                        method: 'post',
+                        url: "http://localhost:8080/exam_2/paper/undoPublish?id=" + row.id,
+                    }).then(resp => {
+                        this.$message({
+                            type: 'success',
+                            message: '撤回成功!'
+                        });
+                        this.checkPaper();
+                    })
+
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消撤回'
+                    });
+                });
+
+            },
+            dateFormat(time){
+                var date=new Date(time);
+                var year=date.getFullYear();
+                /* 在日期格式中，月份是从0开始的，因此要加0
+                * 使用三元表达式在小于10的前面加0，以达到格式统一  如 09:11:05
+                * */
+                var month= date.getMonth()+1<10 ? "0"+(date.getMonth()+1) : date.getMonth()+1;
+                var day=date.getDate()<10 ? "0"+date.getDate() : date.getDate();
+                var hours=date.getHours()<10 ? "0"+date.getHours() : date.getHours();
+                var minutes=date.getMinutes()<10 ? "0"+date.getMinutes() : date.getMinutes();
+                var seconds=date.getSeconds()<10 ? "0"+date.getSeconds() : date.getSeconds();
+                // 拼接
+                return year+"-"+month+"-"+day+" "+hours+":"+minutes;
+            },
+
+        },
+        mounted() {
+            this.courseId = sessionStorage.getItem("courseId");
+            if (this.courseId == 0 || this.courseId == null) {
+                this.checkPaper();
+            } else {
+                this.handleCommand(this.courseId)
+                sessionStorage.setItem("courseId", '0');
+
+            }
+            this.init();
+        },
+        template: '<div>\n' +
+            ' <el-row style="text-align: right;">\n' +
+            '            <el-dropdown style="left: 5px" @command="handleCommand"\n' +
+            '                         placement="bottom-start">\n' +
+            '                <span class="el-dropdown-link">\n' +
+            '                课程<i class="el-icon-arrow-down el-icon--right"></i>\n' +
+            '                </span>\n' +
+            '                <el-dropdown-menu slot="dropdown">\n' +
+            '                    <el-dropdown-item v-for="(course,i) in courses" :key="course.courseId" :command="course.courseId">\n' +
+            '                        {{ course.courseName }}\n' +
+            '                    </el-dropdown-item>\n' +
+            '                </el-dropdown-menu>\n' +
+            '            </el-dropdown>\n' +
+            '            <el-button align="right" type="primary" @click="dialogVisible = true">添加</el-button>\n' +
+            '        </el-row>' +
+            ' <el-dialog\n' +
+            '                title="添加试卷"\n' +
+            '                :visible.sync="dialogVisible"\n' +
+            '                width="30%">\n' +
+            '            <el-form ref="form" :model="paper" label-width="80px"  >\n' +
+            '                <el-form-item label="试卷名称">\n' +
+            '                    <el-input v-model="paper.paperName"></el-input>\n' +
+            '                </el-form-item>\n' +
+            '                <el-form-item label="考试时长">\n' +
+            '                    <el-input  v-model="paper.time"></el-input>\n' +
+            '                </el-form-item>\n' +
+            '  <el-form-item label="活动时间">\n' +
+            '    <el-date-picker\n' +
+            '      v-model="paper.startTime"\n' +
+            '      type="datetime"\n' +
+            '      placeholder="选择日期时间">\n' +
+            '    </el-date-picker>' +
+            '  </el-form-item>' +
+            '                <el-form-item label="课程">\n' +
+            '                    <el-select v-model="paper.courseId" placeholder="课程">\n' +
+            '                        <el-option v-for="(course,i) in courses" :key="course.courseId" :label="course.courseName"\n' +
+            '                                   :value="course.courseId"></el-option>\n' +
+            '                    </el-select>\n' +
+            '                </el-form-item>\n' +
+            '            </el-form>\n' +
+            '            <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogVisible = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="addPaper">添加试卷</el-button>\n' +
+            '  </span>\n' +
+            '        </el-dialog>' +
+            '        <el-table\n' +
+            '                :data="papers"\n' +
+            '                border\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index"\n' +
+            '                    width="50"\n' +
+            '                    prop="序号">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="paperName"\n' +
+            '                    label="试卷名称"\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="time"\n' +
+            '                    label="考试时长"\n' +
+            '                    width="50">\n' +
+            '            </el-table-column>\n' +
+            '<el-table-column label="开始时间" width="180">\n' +
+            '    <template slot-scope="scope">\n' +
+            '        <span>{{dateFormat(scope.row.startTime)}}</span>\n' +
+            '    </template>\n' +
+            '</el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="courseName"\n' +
+            '                    label="课程名称"' +
+            'width="200">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="操作"' +
+            'width="500">\n' +
+            '                <template slot-scope="scope">\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n :disabled="scope.row.state === 0 ? false:true"' +
+            '                            @click="editPaper(scope.$index, scope.row)">编辑试卷</el-button>\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n :disabled="scope.row.state === 0 ? false:true"' +
+            '                            @click="handleEdit(scope.$index, scope.row)">组卷</el-button>\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n' +
+            '                            type="danger"\n ' +
+            '                            @click="handleDelete(scope.$index, scope.row)">删除</el-button>\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n :disabled="scope.row.state === 0 ? false:true"' +
+            '                            type="success"\n' +
+            '                            @click="publishPaper(scope.$index, scope.row)">发布试卷</el-button>\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n :disabled="scope.row.state === 1 ? false:true"' +
+            '                            type="info"\n' +
+            '                            @click="undoPublish(scope.$index, scope.row)">撤销发布</el-button>\n' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="状态"' +
+            ' width="200">\n' +
+            '                <template slot-scope="scope">\n' +
+            '<el-tag\n' +
+            '        type="success"\n' +
+            '        effect="dark"\n' +
+            '        v-if="scope.row.state === 0">\n' +
+            '        正在编辑\n' +
+            '</el-tag>' +
+            '<el-tag\n' +
+            '        type="success"\n' +
+            '        effect="dark"\n' +
+            '        v-if="scope.row.state === 1">\n' +
+            '        已发布\n' +
+            '</el-tag>' +
+            '<el-tag\n' +
+            '        type="success"\n' +
+            '        effect="dark"\n' +
+            '        v-if="scope.row.state === 2">\n' +
+            '      批阅中\n' +
+            '</el-tag>' +
+            '<el-tag\n' +
+            '        type="success"\n' +
+            '        effect="dark"\n' +
+            '        v-if="scope.row.state === 3">\n' +
+            '      已批阅\n' +
+            '</el-tag>' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            ' <el-dialog\n' +
+            '                title="修改试卷"\n' +
+            '                :visible.sync="dialogEVisible"\n' +
+            '                width="30%">\n' +
+            '            <el-form ref="form" :model="paperEdit" label-width="80px"  >\n' +
+            '                <el-form-item label="试卷名称">\n' +
+            '                    <el-input v-model="paperEdit.paperName"></el-input>\n' +
+            '                </el-form-item>\n' +
+            '                <el-form-item label="考试时长">\n' +
+            '                    <el-input  v-model="paperEdit.time"></el-input>\n' +
+            '                </el-form-item>\n' +
+            '  <el-form-item label="活动时间">\n' +
+            '    <el-date-picker\n' +
+            '      v-model="paperEdit.startTime"\n' +
+            '      type="datetime"\n' +
+            '      placeholder="选择日期时间">\n' +
+            '    </el-date-picker>' +
+            '  </el-form-item>' +
+            '                <el-form-item label="课程">\n' +
+            '                    <el-select v-model="paperEdit.courseId" placeholder="课程">\n' +
+            '                        <el-option v-for="(course,i) in courses" :key="course.courseId" :label="course.courseName"\n' +
+            '                                   :value="course.courseId"></el-option>\n' +
+            '                    </el-select>\n' +
+            '                </el-form-item>\n' +
+            '            </el-form>\n' +
+            '            <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogEVisible = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="editConfirm()">添加试卷</el-button>\n' +
+            '  </span>\n' +
+            '        </el-dialog>' +
+            '    </div>',
+    })
+    //试卷批阅列表
+    let paper2 = Vue.component('paper', {
+        data: function () {
+            return {
+                courses: [],
+                courseName: '课程',
+                courseId: '',
+                dialogVisible: false,
+                userId: '',
+                papers: [],
+                paper: {
+                    id: '',
+                    paperName: '',
+                    time: '',
+                    startTime:'',
+                    courseId: '',
+                    courseName: '',
+                    state: 0,
+                    loop:'',
+                    avg:'',
+                }
+            }
+        },
+        methods: {
+            checkPaper() {
+                this.userId = sessionStorage.getItem("userId");
+
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/paper/check?userId=" + this.userId,
+                }).then(resp => {
+                    this.papers = resp.data;
+                    console.log(this.papers)
+                })
+
+            },
+            init() {
+                //为下拉菜单查询所有课程
+                this.userId = sessionStorage.getItem("userId");
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/selectByUser?userId=" + this.userId,
+                }).then(resp => {
+                    this.courses = resp.data;
+                })
+            },
+            handleCommand(command) {
+
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/paper/selectByC?courseId=" + command,
+                }).then(resp => {
+                    this.papers = resp.data;
+                    console.log(this.papers)
+                })
+            },
+            gradePaper(index, row) {
+                sessionStorage.setItem("paperId", row.id + '')
+                this.$router.push('/stuPaperList')
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/paper/updateState?state=2&paperId="+row.id ,
+                }).then(resp => {
+                    this.papers = resp.data;
+                })
+            },
+            checkList(index, row){
+                sessionStorage.setItem("paperId", row.id + '')
+                this.$router.push('/stuPaper')
+            },
+            gradeAnalyse(index, row){
+                sessionStorage.setItem("paperId", row.id + '')
+                this.$router.push('/gradeAnalyse')
+            }
+        },
+        mounted() {
+            this.courseId = sessionStorage.getItem("courseId");
+            if (this.courseId == 0 || this.courseId == null) {
+                this.checkPaper();
+            } else {
+                this.handleCommand(this.courseId)
+                sessionStorage.setItem("courseId", '0');
+
+            }
+
+            this.init();
+        },
+        template: '<div>\n' +
+            ' <el-row style="text-align: left;">\n' +
+            '            <el-dropdown style="left: 5px" @command="handleCommand"\n' +
+            '                         placement="bottom-start">\n' +
+            '                <span class="el-dropdown-link">\n' +
+            '                课程<i class="el-icon-arrow-down el-icon--right"></i>\n' +
+            '                </span>\n' +
+            '                <el-dropdown-menu slot="dropdown">\n' +
+            '                    <el-dropdown-item v-for="(course,i) in courses" :key="course.courseId" :command="course.courseId">\n' +
+            '                        {{ course.courseName }}\n' +
+            '                    </el-dropdown-item>\n' +
+            '                </el-dropdown-menu>\n' +
+            '            </el-dropdown>\n' +
+            '        </el-row>' +
+            '        <el-table\n' +
+            '                :data="papers"\n' +
+            '                border\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index"\n' +
+            '                    width="50"\n' +
+            '                    prop="序号">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="paperName"\n' +
+            '                    label="试卷名称"\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="time"\n' +
+            '                    label="考试时长"\n' +
+            '                    width="50">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="courseName"\n' +
+            '                    label="课程名称"' +
+            'width="200">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="avg"\n' +
+            '                    label="平均分"' +
+            'width="200">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="操作"' +
+            'width="500">\n' +
+            '                <template slot-scope="scope">\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n ' +
+            '                            @click="gradePaper(scope.$index, scope.row)">批阅试卷</el-button>\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n  type="primary"' +
+            '                            @click="checkList(scope.$index, scope.row)">查看学生成绩</el-button>\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n  type="primary"' +
+            '                            @click="gradeAnalyse(scope.$index, scope.row)">成绩分析</el-button>\n' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="状态"' +
+            ' width="200">\n' +
+            '                <template slot-scope="scope">\n' +
+            '<el-tag\n' +
+            '        type="success"\n' +
+            '        effect="dark"\n' +
+            '        v-if="scope.row.state === 0">\n' +
+            '        正在编辑\n' +
+            '</el-tag>' +
+            '<el-tag\n' +
+            '        type="success"\n' +
+            '        effect="dark"\n' +
+            '        v-if="scope.row.state === 1">\n' +
+            '        已发布\n' +
+            '</el-tag>' +
+            '<el-tag\n' +
+            '        type="success"\n' +
+            '        effect="dark"\n' +
+            '        v-if="scope.row.state === 2">\n' +
+            '      批阅中\n' +
+            '</el-tag>' +
+            '<el-tag\n' +
+            '        type="success"\n' +
+            '        effect="dark"\n' +
+            '        v-if="scope.row.state === 3">\n' +
+            '      已批阅\n' +
+            '</el-tag>' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '    </div>',
+    })
+    let stuPaper = Vue.component('paper', {
+        data: function () {
+            return {
+                courses: [],
+                paperId: '',
+                courseName: '课程',
+                courseId: '',
+                dialogVisible: false,
+                userId: '',
+                papers: [],
+                paper: {
+                    id: '',
+                    paperName: '',
+                    time: '',
+                    courseId: '',
+                    courseName: '',
+                    state: '',
+                },
+                record: {
+                    id: '',
+                    account:'',
+                    examId: '',
+                    pna:'',
+                    userId: '',
+                    name: '',
+                    major: '',
+                    startTime: '',
+                    endTime: '',
+                    start: '',
+                    end: '',
+                    count: '',//分数
+                    state: '',
+                },
+                records:[],
+            }
+        },
+        methods: {
+            checkGradePaperList() {
+                this.paperId = sessionStorage.getItem("paperId");
+                console.log(this.userId)
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/record/checkGradePaperListByP?paperId=" + this.paperId,
+                }).then(resp => {
+                    this.records = resp.data;
+                })
+
+            },
+
+            checkGradePaper(index, row) {
+                sessionStorage.setItem("paperId", row.examId + '')
+                sessionStorage.setItem("stuId", row.userId + '')
+
+                this.$router.push('/stuScore')
+            },
+        },
+        mounted() {
+            this.checkGradePaperList();
+        },
+        template: '<div>\n' +
+            ' <el-row style="text-align: left;">\n'+
+            '        </el-row>' +
+            '        <el-table\n' +
+            '                :data="records"\n' +
+            '                border\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index"\n' +
+            '                    width="50"\n' +
+            '                    prop="序号">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="name"\n' +
+            '                    label="学生名称"\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="count"\n' +
+            '                    label="分数"\n' +
+            '                    width="50">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="操作"' +
+            'width="500">\n' +
+            '                <template slot-scope="scope">\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n ' +
+            '                            @click="checkGradePaper(scope.$index, scope.row)">查看成绩</el-button>\n' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="状态"' +
+            ' width="200">\n' +
+            '                <template slot-scope="scope">\n' +
+            '<el-tag\n' +
+            '        type="success"\n' +
+            '        effect="dark"\n' +
+            '        >\n' +
+            '      已批阅\n' +
+            '</el-tag>' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '    </div>',
+    })
+    let stuScore = Vue.component('gradePaper', {
+        data: function () {
+            return {
+                //试卷ID
+                paperId: '',
+                userId:'',
+                //要编辑的试卷
+                paper: {
+                    choices: [],
+                    judges: [],
+                    answers: [],
+                },
+            }
+        },
+        methods: {
+            init() {
+                this.userId=sessionStorage.getItem("stuId")
+                this.paperId = sessionStorage.getItem("paperId");
+                //试卷原有题目亦要显示
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/checkStuAnswer?userId="+this.userId+"&paperId="+this.paperId,
+                }).then(resp => {
+                    this.paper = resp.data;
+                    console.log(this.questions)
+                })
+            },
+            tableRowClassName({row, rowIndex}) {
+                if (row.score === 0) {
+                    return 'warning-row';
+                } else  {
+                    return '';
+                }
+
+            }
+
+        },
+        mounted() {
+            this.init();
+        },
+        template: '<div>\n' +
+            '    <!--        选择题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">选择题</span>\n' +
+            '        </el-row>\n' +
+            '    <el-table\n' +
+            '            :data="paper.choices"\n' +
+            '            style="width: 100%"' +
+            ':row-class-name="tableRowClassName">\n' +
+            '        <el-table-column type="expand">\n' +
+            '            <template slot-scope="props">\n' +
+            '                <el-form label-position="left" inline class="demo-table-expand">\n' +
+            '                    <el-form-item label="选项：A">\n' +
+            '                        <span>{{ props.row.a }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：B">\n' +
+            '                        <span>{{ props.row.b }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：C">\n' +
+            '                        <span>{{ props.row.c }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：D">\n' +
+            '                        <span>{{ props.row.d }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                </el-form>\n' +
+            '            </template>\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                type="index">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="题干"\n' +
+            '                prop="stem">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="正确答案"\n' +
+            '                prop="rightAnswer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="答案"\n' +
+            '                prop="answer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="分数"\n' +
+            '                prop="score">\n' +
+            '        </el-table-column>\n' +
+            '    </el-table>\n' +
+            ' <!--        判断题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">判断题</span>\n' +
+            '        </el-row>\n' +
+            '        <el-table\n' +
+            '                :data="paper.judges"\n' +
+            '                style="width: 100%"' +
+            ':row-class-name="tableRowClassName">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="答案"\n' +
+            '                prop="answer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="分数"\n' +
+            '                prop="score">\n' +
+            '        </el-table-column>\n' +
+            '        </el-table>\n' +
+            '        <!--        简答题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">简答题</span>\n' +
+            '        </el-row>\n' +
+            '        <el-table\n' +
+            '                :data="paper.answers"\n' +
+            '                style="width: 100%"' +
+            ':row-class-name="tableRowClassName">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="答案"\n' +
+            '                prop="answer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="分数"\n' +
+            '                prop="score">\n' +
+            '        </el-table-column>\n' +
+            '        </el-table>\n' +
+            '</div>',
+    })
+    //批阅试卷时候的学生列表
+    let stuPaperList = Vue.component('grade', {
+        data: function () {
+            return {
+                paperId: '',
+                users: [],
+            }
+        },
+        methods: {
+            //选出所有完成本试卷的学生
+            init() {
+                this.paperId = sessionStorage.getItem("paperId");
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/selectByPFromRecord?paperId="+this.paperId,
+                    headers: {'Content-Type': 'application/json;charset=UTF-8'},
+                }).then(resp => {
+                    console.log(resp.data);
+                    this.users = resp.data;
+                })
+            },
+            grade(index,row){
+                sessionStorage.setItem("stuId",row.id+'')
+                //自动批阅
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/autoGrade?userId="+row.id+"&paperId="+this.paperId,
+                    headers: {'Content-Type': 'application/json;charset=UTF-8'},
+                }).then(resp => {
+                    console.log(resp.data);
+                    this.$router.push('/gradePaper')
+                })
+            },
+        },
+        mounted() {
+            this.init()
+        },
+        template: '<div>\n' +
+            '    <el-table\n' +
+            '            :data="users"\n' +
+            '            style="width: 100%"\n' +
+            '            :default-sort = "{prop: \'account\', order: \'descending\'}"\n' +
+            '    >\n' +
+            '        <el-table-column\n' +
+            '                type="index"\n' +
+            '                width="50">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                prop="account"\n' +
+            '                label="学号"\n' +
+            '                sortable\n' +
+            '                width="180">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                prop="name"\n' +
+            '                label="姓名"\n' +
+            '                sortable\n' +
+            '                width="180">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                fixed="right"\n' +
+            '                label="操作"\n' +
+            '                width="120">\n' +
+            '            <template slot-scope="scope">\n' +
+            '                <el-button\n' +
+            '                        @click="grade(scope.$index, scope.row)"\n' +
+            '                        type="text"\n' +
+            '                        size="small">\n' +
+            '                    批阅\n' +
+            '                </el-button>\n' +
+            '            </template>\n' +
+            '        </el-table-column>\n' +
+            '    </el-table>  \n' +
+            '</div>\n',
+    })
+    //批阅试卷
+    let gradePaper = Vue.component('gradePaper', {
+        data: function () {
+            return {
+                //试卷ID
+                paperId: '',
+                userId:'',
+                //要编辑的试卷
+                paper: {
+                    choices: [],
+                    judges: [],
+                    answers: [],
+                },
+            }
+        },
+        methods: {
+            init() {
+                this.userId=sessionStorage.getItem("stuId")
+                this.paperId = sessionStorage.getItem("paperId");
+                //试卷原有题目亦要显示
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/checkStuAnswer?userId="+this.userId+"&paperId="+this.paperId,
+                }).then(resp => {
+                    this.paper = resp.data;
+                    console.log(this.questions)
+                })
+            },
+
+            //提交试卷
+            submitPaper() {
+                console.log(this.paper)
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/gradePaper?userId="+this.userId+"&paperId="+this.paperId,
+                    data:this.paper,
+                }).then(resp => {
+                    this.paper = resp.data;
+                    this.$router.push('/stuPaperList')
+
+                })
+            },
+
+        },
+        mounted() {
+            this.init();
+        },
+        template: '<div>\n' +
+            '    <!--        选择题-->\n' +
+            '    <el-table\n' +
+            '            :data="paper.choices"\n' +
+            '            style="width: 100%">\n' +
+            '        <el-table-column type="expand">\n' +
+            '            <template slot-scope="props">\n' +
+            '                <el-form label-position="left" inline class="demo-table-expand">\n' +
+            '                    <el-form-item label="选项：A">\n' +
+            '                        <span>{{ props.row.a }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：B">\n' +
+            '                        <span>{{ props.row.b }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：C">\n' +
+            '                        <span>{{ props.row.c }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：D">\n' +
+            '                        <span>{{ props.row.d }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                </el-form>\n' +
+            '            </template>\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                type="index">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="题干"\n' +
+            '                prop="stem">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="正确答案"\n' +
+            '                prop="rightAnswer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="答案"\n' +
+            '                prop="answer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="分数"\n' +
+            '                prop="score">\n' +
+            '        </el-table-column>\n' +
+            '    </el-table>\n' +
+            ' <!--        判断题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">判断题</span>\n' +
+            '        </el-row>\n' +
+            '        <el-table\n' +
+            '                :data="paper.judges"\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="答案"\n' +
+            '                prop="answer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="分数"\n' +
+            '                prop="score">\n' +
+            '        </el-table-column>\n' +
+            '        </el-table>\n' +
+            '        <!--        简答题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">简答题</span>\n' +
+            '        </el-row>\n' +
+            '        <el-table\n' +
+            '                :data="paper.answers"\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="答案"\n' +
+            '                prop="answer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="分数"\n' +
+            '              >\n' +
+            '            <template slot-scope="scope">\n' +
+            '<el-input v-model="scope.row.score" placeholder="请打分"></el-input>' +
+            '            </template>\n' +
+            '        </el-table-column>\n' +
+            '        </el-table>\n' +
+            ' <el-row style="text-align: center;">\n' +
+            '            <el-button align="right" type="primary" @click=submitPaper>完成批阅</el-button>\n' +
+            '        </el-row>' +
+            '</div>',
+    })
+    let gradeAnalyse = Vue.component('gradePaper', {
+        data: function () {
+            return {
+                //试卷ID
+                paperId: '',
+                userId:'',
+                //要编辑的试卷
+                paper: {
+                    choices: [],
+                    judges: [],
+                    answers: [],
+                },
+            }
+        },
+        methods: {
+            init() {
+                this.paperId = sessionStorage.getItem("paperId");
+                //试卷原有题目亦要显示
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/gradeAnalyse?paperId="+this.paperId,
+                }).then(resp => {
+                    this.paper = resp.data;
+                    console.log(this.paper)
+                })
+            },
+
+            //提交试卷
+            submitPaper() {
+                console.log(this.paper)
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/gradePaper?userId="+this.userId+"&paperId="+this.paperId,
+                    data:this.paper,
+                }).then(resp => {
+                    this.paper = resp.data;
+                    this.$router.push('/stuPaperList')
+
+                })
+            },
+
+        },
+        mounted() {
+            this.init();
+        },
+        template: '<div>\n' +
+            '    <el-table\n' +
+            '            :data="paper.choices"\n' +
+            '            style="width: 100%">\n' +
+            '        <el-table-column type="expand">\n' +
+            '            <template slot-scope="props">\n' +
+            '                <el-form label-position="left" inline class="demo-table-expand">\n' +
+            '                    <el-form-item label="选项：A">\n' +
+            '                        <span>{{ props.row.a }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：B">\n' +
+            '                        <span>{{ props.row.b }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：C">\n' +
+            '                        <span>{{ props.row.c }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：D">\n' +
+            '                        <span>{{ props.row.d }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                </el-form>\n' +
+            '            </template>\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                type="index">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="题干"\n' +
+            '                prop="stem">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="正确答案"\n' +
+            '                prop="rightAnswer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="正确率"\n' +
+            '                >\n' +
+            '            <template slot-scope="scope">\n' +
+            '<el-progress type="circle" :percentage="scope.row.avg"></el-progress>' +
+            '            </template>\n' +
+            '        </el-table-column>\n' +
+            '    </el-table>\n' +
+            ' <!--        判断题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">判断题</span>\n' +
+            '        </el-row>\n' +
+            '        <el-table\n' +
+            '                :data="paper.judges"\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="正确率"\n' +
+            '                >\n' +
+            '            <template slot-scope="scope">\n' +
+            '<el-progress type="circle" :percentage="scope.row.avg"></el-progress>' +
+            '            </template>\n' +
+            '        </el-table-column>\n' +
+            '        </el-table>\n' +
+            '        <!--        简答题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">简答题</span>\n' +
+            '        </el-row>\n' +
+            '        <el-table\n' +
+            '                :data="paper.answers"\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="平均分"\n' +
+            '                prop="avg">\n' +
+            '        </el-table-column>\n' +
+            '        </el-table>\n' +
+
+            '</div>',
+    })
+    let choice = Vue.component('choice', {
+        data: function () {
+            return {
+                userId: '',
+                courses: [],
+                choiceA: {
+                    stem: '',
+                    a: '',
+                    b: '',
+                    c: '',
+                    d: '',
+                    rightAnswer: '',
+                    courseID: '',
+                    type: 1,
+                    score:0,
+                    avg:'',
+                },
+                choices: [],
+
+                dialogAVisible: false,
+            }
+        },
+        methods: {
+            init() {
+                //得到该老师的全部课程
+                this.userId = sessionStorage.getItem("userId");
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/selectByUser?userId=" + this.userId,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.courses = resp.data;
+                })
+            },
+            selectAll() {
+
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/selectCByUser?userId=" + this.userId,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.choices = resp.data;
+                })
+            },
+            handleCommand(command) {
+                this.$message('click on item ' + command);
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/selectCByCourse?courseId=" + command,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.choices = resp.data;
+                })
+            },
+            //添加题目
+            addChoice() {
+                console.log("添加的选择题目为：");
+                console.log(this.choiceA);
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/addChoice",
+                    data: this.choiceA,
+                }).then(resp => {
+                    this.dialogAVisible = false;
+                    this.selectAll();
+                })
+            },
+            deleteQC(index,row){
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/deleteQC?id="+row.id,
+                }).then(resp => {
+                    this.$message({
+                        type: 'success',
+                        message: '删除成功!'
+                    });
+                    this.selectAll();
+                })
+            },
+
+        },
+        mounted() {
+            this.init();
+            this.selectAll();
+        },
+        template: '<div>\n' +
+            '        <el-row style="text-align: right;">\n' +
+            '            <el-dropdown style="left: 5px" @command="handleCommand"' +
+            ' placement="bottom-start">\n' +
+            '                <span class="el-dropdown-link">\n' +
+            '                课程<i class="el-icon-arrow-down el-icon--right"></i>\n' +
+            '                </span>\n' +
+            '                <el-dropdown-menu   slot="dropdown">\n' +
+            '                    <el-dropdown-item v-for="(course,i) in courses" :key="course.courseId" :command="course.courseId">\n' +
+            '                        {{course.courseName}}\n' +
+            '                    </el-dropdown-item>\n' +
+            '                </el-dropdown-menu>\n' +
+            '            </el-dropdown>\n' +
+            '            <el-button align="right" type="primary" @click="dialogAVisible = true">添加</el-button>\n' +
+            '        </el-row>\n' +
+            '            <el-dialog\n' +
+            '                    title="选择题"\n' +
+            '                    :visible.sync="dialogAVisible"\n' +
+            '                    width="40%"\n' +
+            '            >\n' +
+            '                <el-form ref="form" :model="choiceA" label-width="80px">\n' +
+
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="题干">\n' +
+            '                        <el-input v-model="choiceA.stem"></el-input>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：A">\n' +
+            '                        <el-input v-model="choiceA.a"></el-input>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：B">\n' +
+            '                        <el-input v-model="choiceA.b"></el-input>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：C">\n' +
+            '                        <el-input v-model="choiceA.c"></el-input>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：D">\n' +
+            '                        <el-input v-model="choiceA.d"></el-input>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="正确答案">\n' +
+            '                        <el-select v-model="choiceA.rightAnswer" placeholder="正确选项">\n' +
+            '                            <el-option label="A" value="a"></el-option>\n' +
+            '                            <el-option label="B" value="b"></el-option>\n' +
+            '                            <el-option label="C" value="c"></el-option>\n' +
+            '                            <el-option label="D" value="d"></el-option>\n' +
+            '                        </el-select>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="课程">\n' +
+            '                        <el-select v-model="choiceA.courseID" placeholder="课程">\n' +
+            '                            <el-option v-for="(course,i) in courses" :key="course.courseId" :label="course.courseName" :value="course.courseId"></el-option>\n' +
+            '                        </el-select>\n' +
+            '                    </el-form-item>\n' +
+            '                </el-form>\n' +
+            '                <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogAVisible = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="addChoice">添加题目</el-button>\n' +
+            '  </span>\n' +
+            '            </el-dialog>\n' +
+            '        <el-table\n' +
+            '                :data="choices"\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column type="expand">\n' +
+            '                <template slot-scope="props">\n' +
+            '                    <el-form label-position="left" inline class="demo-table-expand">\n' +
+            '                        <el-form-item label="选项：A">\n' +
+            '                            <span>{{ props.row.a }}</span>\n' +
+            '                        </el-form-item>\n' +
+            '                        <el-form-item label="选项：B">\n' +
+            '                            <span>{{ props.row.b }}</span>\n' +
+            '                        </el-form-item>\n' +
+            '                        <el-form-item label="选项：C">\n' +
+            '                            <span>{{ props.row.c }}</span>\n' +
+            '                        </el-form-item>\n' +
+            '                        <el-form-item label="选项：D">\n' +
+            '                            <span>{{ props.row.d }}</span>\n' +
+            '                        </el-form-item>\n' +
+            '                        <el-form-item label="正确答案">\n' +
+            '                            <span>{{ props.row.rightAnswer }}</span>\n' +
+            '                        </el-form-item>\n' +
+            '                    </el-form>\n' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="操作">\n' +
+            '                <template slot-scope="scope">\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n' +
+            '                            type="danger"\n' +
+            '                            @click="deleteQC(scope.$index, scope.row)">删除\n' +
+            '                    </el-button>\n' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '    </div>',
+    })
+    let judge = Vue.component('judge', {
+        data: function () {
+            return {
+                userId: '',
+                courses: [],
+                judgeA: {
+                    stem: '',
+                    rightAnswer: '',
+                    courseID: '',
+                    type: 2,
+                    score:0,
+                    avg:'',
+                },
+                judges: [],
+
+                dialogAVisible: false,
+            }
+        },
+        methods: {
+            init() {
+                //得到该老师的全部课程
+                this.userId = sessionStorage.getItem("userId");
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/selectByUser?userId=" + this.userId,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.courses = resp.data;
+                })
+            },
+            selectAll() {
+
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/selectJByUser?userId=" + this.userId,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.judges = resp.data;
+                })
+            },
+            handleCommand(command) {
+                this.$message('click on item ' + command);
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/selectCByCourse?courseId=" + command,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.judges = resp.data;
+                })
+            },
+            //添加题目
+            addJudge() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/addJudge",
+                    data: this.judgeA,
+                }).then(resp => {
+                    this.dialogAVisible = false;
+                    this.selectAll();
+                })
+            },
+            deleteQJ(index,row){
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/deleteQJ?id="+row.id,
+                }).then(resp => {
+                    this.$message({
+                        type: 'success',
+                        message: '删除成功!'
+                    });
+                    this.selectAll();
+                })
+            },
+        },
+        mounted() {
+            this.init();
+            this.selectAll();
+        },
+        template: ' <div>\n' +
+            '        <el-row style="text-align: right;">\n' +
+            '            <el-dropdown style="left: 5px" @command="handleCommand"\n' +
+            '                         placement="bottom-start">\n' +
+            '                <span class="el-dropdown-link">\n' +
+            '                课程<i class="el-icon-arrow-down el-icon--right"></i>\n' +
+            '                </span>\n' +
+            '                <el-dropdown-menu slot="dropdown">\n' +
+            '                    <el-dropdown-item v-for="(course,i) in courses" :key="course.courseId" :command="course.courseId">\n' +
+            '                        {{course.courseName}}\n' +
+            '                    </el-dropdown-item>\n' +
+            '                </el-dropdown-menu>\n' +
+            '            </el-dropdown>\n' +
+            '            <el-button align="right" type="primary" @click="dialogAVisible = true">添加</el-button>\n' +
+
+            '        </el-row>\n' +
+            '        <el-dialog\n' +
+            '                title="添加题目"\n' +
+            '                :visible.sync="dialogAVisible"\n' +
+            '                width="30%">\n' +
+            '            <el-form ref="form" :model="judgeA" label-width="80px">\n' +
+            '                <el-form-item label="题干">\n' +
+            '                    <el-input v-model="judgeA.stem"></el-input>\n' +
+            '                </el-form-item>\n' +
+            '                <el-form-item label="正确答案">\n' +
+            '                    <el-select v-model="judgeA.rightAnswer" placeholder="正确选项">\n' +
+            '                        <el-option label="对" value="1"></el-option>\n' +
+            '                        <el-option label="错" value="0"></el-option>\n' +
+            '                    </el-select>\n' +
+            '                </el-form-item>\n' +
+            '                <el-form-item label="课程">\n' +
+            '                    <el-select v-model="judgeA.courseID" placeholder="课程">\n' +
+            '                        <el-option v-for="(course,i) in courses" :key="course.courseId" :label="course.courseName" :value="course.courseId"></el-option>\n' +
+            '                    </el-select>\n' +
+            '                </el-form-item>\n' +
+            '            </el-form>\n' +
+            '            <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogAVisible = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="addJudge">添加题目</el-button>\n' +
+            '  </span>\n' +
+            '        </el-dialog>\n' +
+            '        <el-table\n' +
+            '                :data="judges"\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="操作">\n' +
+            '                <template slot-scope="scope">\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n' +
+            '                            type="danger"\n' +
+            '                            @click="deleteQJ(scope.$index, scope.row)">删除\n' +
+            '                    </el-button>\n' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '    </div>',
+    })
+    let answer = Vue.component('answer', {
+        data: function () {
+            return {
+                userId: '',
+                courses: [],
+                answerA: {
+                    stem: '',
+                    rightAnswer: '',
+                    courseID: '',
+                    type: 3,
+                    score:0,
+                    avg:'',
+                },
+                answers: [],
+
+                dialogAVisible: false,
+            }
+        },
+        methods: {
+            init() {
+                //得到该老师的全部课程
+                this.userId = sessionStorage.getItem("userId");
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/selectByUser?userId=" + this.userId,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.courses = resp.data;
+                })
+            },
+            selectAll() {
+
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/selectAByUser?userId=" + this.userId,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.answers = resp.data;
+                    this.answers.splice(1, 1)
+                })
+            },
+            handleCommand(command) {
+                this.$message('click on item ' + command);
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/selectCByCourse?courseId=" + command,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.choices = resp.data;
+                })
+            },
+            //添加题目
+            addAnswer() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/addAnswer",
+                    data: this.answerA,
+                }).then(resp => {
+                    this.dialogAVisible = false;
+                    this.selectAll();
+                })
+            },
+            deleteQA(index,row){
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/deleteQA?id="+row.id,
+                }).then(resp => {
+                    this.$message({
+                        type: 'success',
+                        message: '删除成功!'
+                    });
+                    this.selectAll();
+                })
+            },
+        },
+        mounted() {
+            this.init();
+            this.selectAll();
+        },
+        template: ' <div>\n' +
+            '        <el-row style="text-align: right;">\n' +
+            '            <el-dropdown style="left: 5px" @command="handleCommand"\n' +
+            '                         placement="bottom-start">\n' +
+            '                <span class="el-dropdown-link">\n' +
+            '                课程<i class="el-icon-arrow-down el-icon--right"></i>\n' +
+            '                </span>\n' +
+            '                <el-dropdown-menu slot="dropdown">\n' +
+            '                    <el-dropdown-item v-for="(course,i) in courses" :key="course.courseId" :command="course.courseId">\n' +
+            '                        {{course.courseName}}\n' +
+            '                    </el-dropdown-item>\n' +
+            '                </el-dropdown-menu>\n' +
+            '            </el-dropdown>\n' +
+            '            <el-button align="right" type="primary" icon="el-icon-plus" circle @click="dialogAVisible = true"></el-button>\n' +
+            '        </el-row>\n' +
+            '        <el-dialog\n' +
+            '                title="添加老师"\n' +
+            '                :visible.sync="dialogAVisible"\n' +
+            '                width="30%">\n' +
+            '            <el-form ref="form" :model="answerA" label-width="80px">\n' +
+            '                <el-form-item label="题干">\n' +
+            '                    <el-input v-model="answerA.stem"></el-input>\n' +
+            '                </el-form-item>\n' +
+            '                <el-form-item label="正确答案">\n' +
+            '                    <el-input type="textarea" v-model="answerA.rightAnswer"></el-input>\n' +
+            '                </el-form-item>\n' +
+            '                <el-form-item label="课程">\n' +
+            '                    <el-select v-model="answerA.courseID" placeholder="正确选项">\n' +
+            '                        <el-option v-for="(course,i) in courses" :key="course.courseId" :label="course.courseName" :value="course.courseId"></el-option>\n' +
+            '                    </el-select>\n' +
+            '                </el-form-item>\n' +
+            '            </el-form>\n' +
+            '            <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogAVisible = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="addAnswer">添加题目</el-button>\n' +
+            '  </span>\n' +
+            '        </el-dialog>\n' +
+            '        <el-table\n' +
+            '                :data="answers"\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="操作">\n' +
+            '                <template slot-scope="scope">\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n' +
+            '                            type="danger"\n' +
+            '                            @click="deleteQA(scope.$index, scope.row)">删除\n' +
+            '                    </el-button>\n' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '    </div>',
+    })
+    let editPaper = Vue.component('editPaper', {
+        data: function () {
+            return {
+                //试卷ID
+                paperId: '',
+                //要编辑的试卷
+                paper: {
+                    choices: [],
+                    judges: [],
+                    answers: [],
+                },
+                //从数据库中获取的该试卷可用的题目
+                questions: {
+                    choices: [],
+                    judges: [],
+                    answers: [],
+                },
+                //选中的题目
+                choiceSelection: [],
+                judgeSelection: [],
+                answerSelection: [],
+                //添加题目时的对话框
+                dialogCVisible: false,
+                dialogJVisible: false,
+                dialogAVisible: false,
+
+
+            }
+        },
+        methods: {
+            init() {
+                this.paperId = sessionStorage.getItem("paperId");
+                console.log("edit")
+                console.log(this.paperId)
+                //根据paperID获得科目 然后将科目的所有题目提取出来
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/selectAllByPaper?paperId=" + this.paperId,
+                }).then(resp => {
+                    this.questions = resp.data;
+                    console.log(this.questions)
+                })
+                //试卷原有题目亦要显示
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/selectByPaper?paperId=" + this.paperId,
+                }).then(resp => {
+                    this.paper = resp.data;
+                    console.log(this.questions)
+                })
+            },
+
+            //多选试卷响应
+            choiceSelectionChange(rows) {
+                console.log("选中的：")
+                console.log(rows)
+                this.choiceSelection = rows;
+            },
+            judgeSelectionChange(rows) {
+                this.judgeSelection = rows;
+            },
+            answerSelectionChange(rows) {
+                this.answerSelection = rows;
+            },
+            //添加试卷响应
+            addChoice() {
+
+                for (let i = 0; i < this.choiceSelection.length; i++) {
+                    this.paper.choices.push(this.choiceSelection[i]);
+                }
+                this.paper.choices = this.deleteRepeat(this.paper.choices);
+                console.log(this.paper.choices)
+                this.dialogCVisible = false;
+            },
+            addJudge() {
+                for (let i = 0; i < this.judgeSelection.length; i++) {
+                    this.paper.judges.push(this.judgeSelection[i]);
+                }
+                this.paper.judges = this.deleteRepeat(this.paper.judges);
+                this.dialogJVisible = false;
+            },
+            addAnswer() {
+                for (let i = 0; i < this.answerSelection.length; i++) {
+                    this.paper.answers.push(this.answerSelection[i]);
+                }
+                this.paper.answers = this.deleteRepeat(this.paper.answers);
+                this.dialogAVisible = false;
+            },
+            //去重
+            deleteRepeat(arrayList) {
+                const res = new Map();
+                return arrayList.filter((arrayList) => !res.has(arrayList.id) && res.set(arrayList.id, 1));   //过滤
+            },
+
+            //提交试卷
+            setPaper() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/setPaper?paperId=" + this.paperId,
+                    data: this.paper,
+                }).then(resp => {
+                    this.$router.push('/paper')
+                })
+            },
+            //重置试卷
+            resetPaper() {
+                this.paper.choices.splice(0, this.paper.choices.length);
+                this.paper.judges.splice(0, this.paper.judges.length);
+                this.paper.answers.splice(0, this.paper.answers.length);
+            },
+
+        },
+        mounted() {
+            this.init();
+        },
+        template: '<div>\n' +
+            '    <!--        选择题-->\n' +
+            '    <el-row>\n' +
+            '        <span class="question_title">选择题</span>\n' +
+            '        <el-button align="right" type="primary" icon="el-icon-plus" circle\n' +
+            '                   @click="dialogCVisible = true"></el-button>\n' +
+            '    </el-row>\n' +
+            '    <el-table\n' +
+            '            :data="paper.choices"\n' +
+            '            style="width: 100%">\n' +
+            '        <el-table-column type="expand">\n' +
+            '            <template slot-scope="props">\n' +
+            '                <el-form label-position="left" inline class="demo-table-expand">\n' +
+            '                    <el-form-item label="选项：A">\n' +
+            '                        <span>{{ props.row.a }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：B">\n' +
+            '                        <span>{{ props.row.b }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：C">\n' +
+            '                        <span>{{ props.row.c }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：D">\n' +
+            '                        <span>{{ props.row.d }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="正确答案">\n' +
+            '                        <span>{{ props.row.rightAnswer }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                </el-form>\n' +
+            '            </template>\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                type="index">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="题干"\n' +
+            '                prop="stem">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="正确答案"\n' +
+            '                prop="rightAnswer">\n' +
+            '        </el-table-column>\n' +
+            '    </el-table>\n' +
+            '    <el-dialog\n' +
+            '            title="选择题"\n' +
+            '            :visible.sync="dialogCVisible"\n' +
+            '            width="50%">\n' +
+            '        <el-table\n' +
+            '                :data="questions.choices"\n' +
+            '                style="width: 100%"\n' +
+            '                @selection-change="choiceSelectionChange">\n' +
+            '            <el-table-column\n' +
+            '                    type="selection"\n' +
+            '                    width="55">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column type="expand">\n' +
+            '                <template slot-scope="props">\n' +
+            '                    <el-form label-position="left" inline class="demo-table-expand">\n' +
+            '                        <el-form-item label="选项：A">\n' +
+            '                            <span>{{ props.row.a }}</span>\n' +
+            '                        </el-form-item>\n' +
+            '                        <el-form-item label="选项：B">\n' +
+            '                            <span>{{ props.row.b }}</span>\n' +
+            '                        </el-form-item>\n' +
+            '                        <el-form-item label="选项：C">\n' +
+            '                            <span>{{ props.row.c }}</span>\n' +
+            '                        </el-form-item>\n' +
+            '                        <el-form-item label="选项：D">\n' +
+            '                            <span>{{ props.row.d }}</span>\n' +
+            '                        </el-form-item>\n' +
+            '                        <el-form-item label="正确答案">\n' +
+            '                            <span>{{ props.row.rightAnswer }}</span>\n' +
+            '                        </el-form-item>\n' +
+            '                    </el-form>\n' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '        <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogCVisible = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="addChoice">添加题目</el-button>\n' +
+            '  </span>\n' +
+            '    </el-dialog>\n' +
+            ' <!--        判断题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">判断题</span>\n' +
+            '            <el-button align="right" type="primary" icon="el-icon-plus" circle\n' +
+            '                       @click="dialogJVisible = true"></el-button>\n' +
+            '        </el-row>\n' +
+            '        <el-table\n' +
+            '                :data="paper.judges"\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            ' <el-dialog\n' +
+            '                title="判断题"\n' +
+            '                :visible.sync="dialogJVisible"\n' +
+            '                width="30%">\n' +
+            '            <el-table\n' +
+            '                    :data="questions.judges"\n' +
+            '                    style="width: 100%"\n' +
+            '                    @selection-change="judgeSelectionChange">\n' +
+            '                <el-table-column\n' +
+            '                        type="selection"\n' +
+            '                        width="55">\n' +
+            '                </el-table-column>\n' +
+            '                <el-table-column\n' +
+            '                        type="index">\n' +
+            '                </el-table-column>\n' +
+            '                <el-table-column\n' +
+            '                        label="题干"\n' +
+            '                        prop="stem">\n' +
+            '                </el-table-column>\n' +
+            '                <el-table-column\n' +
+            '                        label="正确答案"\n' +
+            '                        prop="rightAnswer">\n' +
+            '                </el-table-column>\n' +
+            '            </el-table>\n' +
+            '            <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogJVisible = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="addJudge">添加题目</el-button>\n' +
+            '  </span>\n' +
+            '        </el-dialog>' +
+            '        <!--        简答题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">简答题</span>\n' +
+            '            <el-button align="right" type="primary" icon="el-icon-plus" circle\n' +
+            '                       @click="dialogAVisible = true"></el-button>\n' +
+            '        </el-row>\n' +
+            '        <el-table\n' +
+            '                :data="paper.answers"\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>' +
+            '<el-dialog\n' +
+            '                title="简答  题"\n' +
+            '                :visible.sync="dialogAVisible"\n' +
+            '                width="30%">\n' +
+            '            <el-table\n' +
+            '                    :data="questions.answers"\n' +
+            '                    style="width: 100%"\n' +
+            '                    @selection-change="answerSelectionChange">\n' +
+            '                <el-table-column\n' +
+            '                        type="selection"\n' +
+            '                        width="55">\n' +
+            '                </el-table-column>\n' +
+            '                <el-table-column\n' +
+            '                        type="index">\n' +
+            '                </el-table-column>\n' +
+            '                <el-table-column\n' +
+            '                        label="题干"\n' +
+            '                        prop="stem">\n' +
+            '                </el-table-column>\n' +
+            '                <el-table-column\n' +
+            '                        label="正确答案"\n' +
+            '                        prop="rightAnswer">\n' +
+            '                </el-table-column>\n' +
+            '            </el-table>\n' +
+            '            <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogAVisible = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="addAnswer">添加题目</el-button>\n' +
+            '  </span>\n' +
+            '        </el-dialog>' +
+            ' <el-row style="text-align: center;">\n' +
+            '            <el-button align="right" type="primary" @click=setPaper>确认提交</el-button>\n' +
+            '            <el-button align="right" type="danger"  @click="resetPaper">重置</el-button>\n' +
+            '        </el-row>' +
+            '</div>',
+    })
+    let userInfo = Vue.component('userInfo', {
+        data: function () {
+            return {
+                userId: '',
+                role: '',
+                user: {
+                    id: '',
+                    account: '',
+                    password: '',
+                    name: '',
+                    role: '',
+                    sex: '',
+                    stuClass: '',
+                },
+                dialogVisibleAdd: false,
+            }
+        },
+        methods: {
+            init() {
+                this.userId = sessionStorage.getItem("userId");
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/selectInfo?id=" + this.userId,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.user = resp.data;
+                    if (this.user.role == '0') {
+                        this.role = '管理员'
+                    }
+                    if (this.user.role == '1') {
+                        this.role = '老师'
+                    }
+                    if (this.user.role == '2') {
+                        this.role = '学生'
+                    }
+
+                })
+            },
+            editUser() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/edit",
+                    headers: {'Content-Type': 'application/json;charset=UTF-8'},
+                    data: this.user,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    if (resp.data = true) {
+                        this.dialogVisibleAdd = false;
+                        this.init()
+                        this.$message({
+                            type: 'success',
+                            message: '修改成功'
+                        });
+                    }
+                })
+            },
+
+        },
+        mounted() {
+            this.init();
+        },
+        template: '<div>' +
+            '<el-descriptions title="用户个人信息" direction="vertical" :column="4" border>\n' +
+            '        <template slot="extra">\n' +
+            '            <el-button type="primary"  @click = "dialogVisibleAdd = true">修改</el-button>\n' +
+            '        </template>\n' +
+            '        <el-descriptions-item label="姓名">{{user.name}}</el-descriptions-item>\n' +
+            '        <el-descriptions-item label="用户名">{{user.account}}</el-descriptions-item>\n' +
+            '        <el-descriptions-item label="班级" :span="2">{{user.stuClass}}</el-descriptions-item>\n' +
+            '        <el-descriptions-item label="身份">\n' +
+            '            <el-tag size="small">{{role}}</el-tag>\n' +
+            '        </el-descriptions-item>\n' +
+            '        <el-descriptions-item label="密码">{{user.password}}</el-descriptions-item>\n' +
+            '        <el-descriptions-item label="性别">\n' +
+            '            <el-tag size="small">{{user.sex}}</el-tag>\n' +
+            '        </el-descriptions-item>\n' +
+            '    </el-descriptions>' +
+            '    <el-dialog\n' +
+            '            title="修改信息"\n' +
+            '            :visible.sync="dialogVisibleAdd"\n' +
+            '            width="30%"\n' +
+            '    >\n' +
+            '        <el-form ref="form" :model="user" label-width="80px">\n' +
+            '            <el-form-item label="账号">{{ user.account }}\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="姓名">\n' +
+            '                <el-input v-model="user.name"></el-input>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="班级">{{ user.stuClass }}\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="密码">\n' +
+            '                <el-input v-model="user.password"></el-input>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="性别">\n' +
+            '            <el-select v-model="user.sex" placeholder="性别">\n' +
+            '                <el-option label="男" value="男"></el-option>\n' +
+            '                <el-option label="女" value="女"></el-option>\n' +
+            '            </el-select>\n' +
+            '            </el-form-item>\n' +
+            '        </el-form>\n' +
+            '        <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogVisibleAdd = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="editUser">确认修改</el-button>\n' +
+            '  </span>\n' +
+            '    </el-dialog>\n' +
+            '</div>',
+    })
+    let routerObj = new VueRouter({
+        //route //这个吧、配置对象中的 route 表示 【路由匹配规则】 的意思
+        routes: [   //路由配置规则
+            //每个路由规则，都是一个对象，这个规则对象，身上，有两个必须的属性：
+            //属性1 是 path，表示监听 哪个路由链接地址；
+            //属性2 是 component，表示，如果 路由前面指定匹配到的 path，则展示 component 属性对应的那个组件
+            //注意：component 的属性值，必须是一个 组件的模块对象，不能是 组件的引用名称；
+            {path: '/', component: course},
+            {path: '/user/:role', component: user},
+            {path: '/course', component: course},
+            {path: '/paper1', component: paper1},
+            {path: '/paper2', component: paper2},
+            {path: '/stuPaper', component: stuPaper},
+            {path: '/stuScore', component: stuScore},
+            {path: '/stuPaperList', component: stuPaperList},
+            {path: '/gradePaper', component: gradePaper},
+            {path: '/gradeAnalyse', component: gradeAnalyse},
+            {path: '/choice', component: choice},
+            {path: '/judge', component: judge},
+            {path: '/answer', component: answer},
+            {path: '/editPaper', component: editPaper},
+            {path: '/userInfo', component: userInfo},
+        ]
+    })
+    let main = new Vue({
+        el: "#app",
+        data() {
+            return {
+                username: '',
+                userStatus: '',
+                role: '',
+                showRouterView: true,
+                user: {
+                    id: '',
+                    name: '',
+                    sex: '',
+                },
+            }
+        },
+        methods: {
+            reload() {
+                this.showRouterView = false
+                // if(this.$route.path=='/user/2'){
+                this.$nextTick(() => (this.showRouterView = true))
+            },
+            init() {
+                this.username = sessionStorage.getItem("username")
+                this.role = sessionStorage.getItem("state")
+                console.log(this.user)
+            },
+            //菜单栏单击事件
+            click(key, keyPath) {
+                console.log(key, keyPath);
+
+                this.reload();
+            },
+            handleCommand(command) {
+                if (command == 6) {
+                    this.$confirm('是否继续退出后台管理', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'info'
+                    }).then(() => {
+                        location.href = "http://localhost:8080/exam_2/html/login.html"
+                        this.$message({
+                            type: 'success',
+                            message: '退出成功'
+                        });
+                    }).catch(() => {
+                        this.$message({
+                            type: 'info',
+                            message: '已取消'
+                        });
+                    });
+                }
+                if (command == 5) {
+                    this.$router.push('/userInfo')
+                }
+            },
+        },
+        router: routerObj,
+        mounted() {
+            this.init();
+        },
+
+
+    })
+</script>
+</body>
+</html>

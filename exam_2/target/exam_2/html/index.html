@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="">
+<head>
+    <meta charset="UTF-8">
+    <title>在线考试</title>
+    <style>
+        .el-table .warning-row {
+            background: #d35d5d;
+        }
+
+        .el-table .success-row {
+            background: #dde0a6;
+        }
+    </style>
+</head>
+<body>
+
+
+<div id="app" style="width:100%;">
+
+    <el-menu
+            :default-active="this.$route.path"
+            class="el-menu-demo"
+            mode="horizontal"
+            @select="handleSelect"
+            background-color="#545c64"
+            text-color="#fff"
+            active-text-color="#ffd04b"
+            router>
+        <el-menu-item index="/list/-1">在线考试</el-menu-item>
+        <el-submenu index="2">
+            <template slot="title">考试科目</template>
+            <el-menu-item v-for="( course,i) in courses"  :index="'/list/'+i">{{course.courseName}}</el-menu-item>
+
+        </el-submenu>
+        <el-menu-item index="/grade">查询成绩</el-menu-item>
+        <el-submenu index="5">
+            <template slot="title">
+                <el-avatar :size="50" :src="circleUrl"></el-avatar>
+                {{user.name}}
+            </template>
+                                        <el-menu-item index="/userInfo">个人信息</el-menu-item>
+                                        <el-menu-item index="6">注销</el-menu-item>
+
+                                    </el-submenu>
+                                    <el-menu-item index="/">{{dateFormat(date)}}</el-menu-item>
+
+    </el-menu>
+
+    <!-- 这是 vue-router 提供的元素，专门用来
+    当作占位符的，将来，路由规则，匹配到的组件，就会展示到这个 router-view 中去 -->
+    <router-view v-if="showRouterView"></router-view>
+
+
+    <!--        <el-table-->
+    <!--                :data="examList"-->
+    <!--                stripe-->
+    <!--                style="width: 100%">-->
+    <!--            <el-table-column-->
+    <!--                    type="index">-->
+    <!--            </el-table-column>-->
+    <!--            <el-table-column-->
+    <!--                    prop="date"-->
+    <!--                    label="试卷"-->
+    <!--                    width="180">-->
+    <!--            </el-table-column>-->
+    <!--            <el-table-column-->
+    <!--                    prop="name"-->
+    <!--                    label="开始时间"-->
+    <!--                    width="180">-->
+    <!--            </el-table-column>-->
+    <!--            <el-table-column-->
+    <!--                    prop="address"-->
+    <!--                    label="地址">-->
+    <!--            </el-table-column>-->
+    <!--            <el-table-column label="操作">-->
+    <!--                <template slot-scope="scope">-->
+    <!--                    <el-button-->
+    <!--                            size="mini"-->
+    <!--                            @click="handleEdit(scope.$index, scope.row)">开始考试</el-button>-->
+    <!--                </template>-->
+    <!--            </el-table-column>-->
+    <!--        </el-table>-->
+
+
+</div>
+
+<script src="../js/vue.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<!-- 引入样式 -->
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<!-- 引入组件库 -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<!-- Vue-router 路由模块 -->
+<script src="../js/vue-router.js"></script>
+
+<script>
+
+    let exam = Vue.component('exam', {
+        methods: {
+            questionName() {
+                if (this.question.type == 1) {
+                    this.name = '选择题'
+                } else if (this.question.type == 2) {
+                    this.name = '判断题'
+                } else {
+                    this.name = '简答题'
+                }
+            },
+            submitPaper(){
+                let count1 = this.choiceCount+this.judgeCount+this.answerCount;
+                let count2 = this.choiceNum+this.judgeNum+this.answerNum;
+                console.log(count1)
+                console.log(count2)
+                if(count1==count2){
+                    this.$confirm(`即将提交试卷, 是否继续?`, '确认交卷', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        this.userId=sessionStorage.getItem("userId")
+                        axios({
+                            method: 'post',
+                            url: "http://localhost:8080/exam_2/record/submitPaper?userId=" + this.userId+"&paperId="+this.paperId,
+                            data:this.paper,
+                        }).then(resp => {
+                            this.$message({
+                                type: 'success',
+                                message: '已提交试卷!'
+                            });
+                            this.paper={}
+                            sessionStorage.setItem("loop","0");
+                            this.$router.push('/userInfo')
+                        })
+                    }).catch(() => {
+                        this.$message({
+                            type: 'info',
+                            message: '已取消撤回'
+                        });
+                    });
+                }else{
+                    this.$confirm(`您还有题目尚未完成, 是否继续?`, '确认交卷', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        this.userId=sessionStorage.getItem("userId")
+                        axios({
+                            method: 'post',
+                            url: "http://localhost:8080/exam_2/record/submitPaper?userId=" + this.userId+"&paperId="+this.paperId,
+                            data:this.paper,
+                        }).then(resp => {
+                            this.$message({
+                                type: 'success',
+                                message: '已提交试卷!'
+                            });
+                            this.paper={}
+                            sessionStorage.setItem("loop","0");
+                            this.$router.push('/userInfo')
+                        })
+                    }).catch(() => {
+                        this.$message({
+                            type: 'info',
+                            message: '已取消撤回'
+                        });
+                    });
+                }
+
+            },
+            last() {
+                if (this.question.type == '1') {
+                    //本题目在选择题中的序号
+                    this.index = this.paper.choices.findIndex(item => {
+                        return item.id === this.question.id;
+                    });
+                    //题目跳转
+                    if (this.index > 0) {
+                        this.question = this.paper.choices[this.index - 1]
+                    } else {
+                    }
+                } else if (this.question.type == '2') {
+                    //本题目在判断题中的序号
+                    this.index = this.paper.judges.findIndex(item => {
+                        return item.id === this.question.id;
+                    });
+
+                    //题目跳转
+                    if (this.index > 0) {
+                        this.question = this.paper.judges[this.index - 1]
+                    } else {
+                        this.question = this.paper.choices[this.choiceNum - 1];
+                        console.log(this.question)
+                    }
+                } else if (this.question.type == '3') {
+                    //本题目在简答题中的序号
+                    this.index = this.paper.answers.findIndex(item => {
+                        return item.id === this.question.id;
+                    });
+                    //题目跳转
+                    if (this.index > 0) {
+                        this.question = this.paper.answers[this.index - 1]
+
+                    } else {
+                        this.question = this.paper.judges[this.answerNum - 1];
+                    }
+                }
+                this.questionName()
+
+            },
+            next() {
+                //清空目前已完成题目数量
+                this.answerCount = 0
+                this.choiceCount = 0
+                this.judgeCount = 0
+                //查看已完成的题目
+                if (this.choiceCount < this.choiceNum) {
+                    for (let i = 0; i < this.paper.choices.length; i++) {
+                        if (this.paper.choices[i].answer != '' && this.paper.choices[i].answer != null) {
+                            this.choiceCount += 1;
+
+                        }
+                        this.choiceC = this.choiceCount
+                    }
+                }
+                //查看已完成的题目
+                if (this.judgeCount < this.judgeNum) {
+                    for (let i = 0; i < this.paper.judges.length; i++) {
+                        if (this.paper.judges[i].answer != '' && this.paper.judges[i].answer != null) {
+                            this.judgeCount += 1;
+                        }
+                        this.judgeC = this.judgeCount
+                    }
+                }
+                //查看已完成的题目
+                if (this.answerCount < this.answerNum) {
+                    for (let i = 0; i < this.paper.answers.length; i++) {
+                        if (this.paper.answers[i].answer != '' && this.paper.answers[i].answer != null) {
+                            this.answerCount += 1;
+                        }
+                        this.answerC = this.answerCount
+                    }
+                }
+                if (this.question.type == '1') {
+                    //本题目在选择题中的序号
+                    this.index = this.paper.choices.findIndex(item => {
+                        return item.id === this.question.id;
+                    });
+
+                    //题目跳转
+                    if (this.index < this.choiceNum - 1) {
+                        this.question = this.paper.choices[this.index + 1]
+                    } else {
+                        this.question = this.paper.judges[0];
+                    }
+                } else if (this.question.type == '2') {
+                    //本题目在判断题中的序号
+                    this.index = this.paper.judges.findIndex(item => {
+                        return item.id === this.question.id;
+                    });
+
+                    //题目跳转
+                    if (this.index < this.judgeNum - 1) {
+                        this.question = this.paper.judges[this.index + 1]
+                    } else {
+                        this.question = this.paper.answers[0];
+                        console.log(this.question)
+                    }
+                } else if (this.question.type == '3') {
+                    //本题目在简答题中的序号
+                    this.index = this.paper.answers.findIndex(item => {
+                        return item.id === this.question.id;
+                    });
+
+                    //题目跳转
+                    if (this.index < this.answerNum - 1) {
+                        this.question = this.paper.answers[this.index + 1]
+
+                    } else {
+                        this.submitPaper()
+
+                    }
+                }
+                this.questionName()
+            },
+            //选择题和判断题选中选项后触发事件
+            change() {
+                this.next();
+            },
+            //通过答题卡实现题目跳转
+            move(val) {
+                this.question = val;
+                this.dialogVisible = false;
+                this.questionName()
+                console.log(this.paper)
+            },
+            //答题卡按钮颜色
+            buttonType(answer, id, type) {
+                // console.log(id)
+                // console.log(this.question.id)
+                // console.log(type)
+                // console.log(this.question.type)
+                if (id == this.question.id && type == this.question.type) {
+                    return "success";
+                } else if (answer != null) {
+                    return "primary";
+                }
+
+            },
+            select21(val) {
+                this.question = this.questions[val]
+            },
+            selectAll() {
+                this.paperId = sessionStorage.getItem("paperId");
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/selectByPaper?paperId=" + this.paperId,
+                }).then(resp => {
+                    this.paper = resp.data;
+                    this.question = this.paper.choices[0];
+                    this.choiceNum = this.paper.choices.length
+                    this.judgeNum = this.paper.judges.length
+                    this.answerNum = this.paper.answers.length
+                })
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/paper/select?paperId=" + this.paperId,
+                }).then(resp => {
+                    this.detail=resp.data
+                    this.endTime(this.detail.startTime,this.detail.time);
+                    console.log(this.dateFormat(this.end))
+                    this.countdown(this.dateFormat(this.end));
+                })
+            },
+            dateFormat(time){
+                var date=new Date(time);
+                var year=date.getFullYear();
+                /* 在日期格式中，月份是从0开始的，因此要加0
+                * 使用三元表达式在小于10的前面加0，以达到格式统一  如 09:11:05
+                * */
+                var month= date.getMonth()+1<10 ? "0"+(date.getMonth()+1) : date.getMonth()+1;
+                var day=date.getDate()<10 ? "0"+date.getDate() : date.getDate();
+                var hours=date.getHours()<10 ? "0"+date.getHours() : date.getHours();
+                var minutes=date.getMinutes()<10 ? "0"+date.getMinutes() : date.getMinutes();
+                var seconds=date.getSeconds()<10 ? "0"+date.getSeconds() : date.getSeconds();
+                // 拼接
+                return year+"-"+month+"-"+day+" "+hours+":"+minutes;
+            },
+            //倒计时
+            countdown(date) {
+
+
+                // 定义结束时间戳
+                const end = new Date(date)
+                // 定义当前时间戳
+                const now = new Date()
+                // 做判断当倒计时结束时都为0
+                if (now >= end) {
+                    this.hr = 0
+                    this.min = 0
+                    this.sec = 0
+                    this.userId=sessionStorage.getItem("userId")
+                    axios({
+                        method: 'post',
+                        url: "http://localhost:8080/exam_2/record/submitPaper?userId=" + this.userId+"&paperId="+this.paperId,
+                        data:this.paper,
+                    }).then(resp => {
+                        this.$message({
+                            type: 'success',
+                            message: '时间已到，试卷自动提交!'
+                        });
+                        this.paper={}
+                        sessionStorage.setItem("loop","0");
+                        this.$router.push('/userInfo')
+                    })
+
+                    return
+                }
+                // 用结束时间减去当前时间获得倒计时时间戳
+                const msec = end - now
+                let day = parseInt(msec / 1000 / 60 / 60 / 24) //算出天数
+                let hr = parseInt(msec / 1000 / 60 / 60 % 24)//算出小时数
+                let min = parseInt(msec / 1000 / 60 % 60)//算出分钟数
+                let sec = parseInt(msec / 1000 % 60)//算出秒数
+                //给数据赋值
+                this.hr = hr > 9 ? hr : '0' + hr
+                this.min = min > 9 ? min : '0' + min
+                this.sec = sec > 9 ? sec : '0' + sec
+                //定义this指向
+                const that = this
+                // 使用定时器 然后使用递归 让每一次函数能调用自己达到倒计时效果
+                if(now<end){
+                    setTimeout(function () {
+                        that.countdown(date)
+                    }, 1000)
+                }else{
+                    setTimeout(function () {
+                        that.countdown(date)
+                    }, 100000)
+                }
+
+            },
+            //算出结束时间
+            endTime(start,hours){
+                var date = new Date(start);
+                date = date.getFullYear() + '-'
+                    + (date.getMonth()+1) + '-'   // 这里加1是因为getMonth()的返回值是为0~11
+                    + date.getDate() + ' '
+                    + date.getHours() + ':'
+                    + date.getMinutes() + ':'
+                    + date.getSeconds();
+                date = Date.parse(new Date(date))/1000; // 转换成时间戳，返回值是ms，除1000后转化成秒
+                date += hours*60*60; // 一天是86400秒
+                let newDate = new Date(parseInt(date) * 1000); // 把时间戳转换成日期
+               this.end = date* 1000
+            }
+
+        },
+        data: function () {
+            return {
+                detail: {
+                    id: '',
+                    paperName: '',
+                    time: '',
+                    startTime:'',
+                    courseId: '',
+                    courseName: '',
+                    state: 0,
+                    loop:'',
+                },
+                end :'',
+                loop:'',
+                name: '选择题',
+                userId:'',
+                paperId: '',
+                paper: {
+                    choices: [],
+                    judges: [],
+                    answers: [],
+                },
+                choiceNum: '1',
+                judgeNum: '1',
+                answerNum: '1',
+                dialogVisible: false,
+                question: {
+                    id: ' 111',
+                    stem: '1',
+                    answer: '1',
+                    rightAnswer: '1',
+                    a: '1',
+                    b: '1',
+                    c: '1',
+                    d: '1',
+                    courseID: '',
+                    type: 1,
+                    score:0,
+                },
+                questions: [],
+                active: '1',
+                index: '',
+                choiceCount: 0,
+                judgeCount: 0,
+                answerCount: 0,
+                choiceC: '0',
+                judgeC: '0',
+                answerC: '0',
+
+                hr: 0,
+                min: 0,
+                sec: 0
+
+            }
+        },
+        //页面加载完成后发送请求
+        mounted() {
+            this.loop=sessionStorage.getItem("loop");
+            if(this.loop=='0'){
+                this.$router.push('/userInfo')
+            }
+            this.selectAll();
+        },
+        template: '<div style="display: flex"> ' +
+
+            '<div style="height: 300px;flex: 1;">\n' +
+            '  <el-steps direction="vertical" :active="question.type" >\n' +
+            '    <el-step title="选择题" :description="`${choiceC}/${choiceNum}`" ></el-step>\n' +
+            '    <el-step title="判断题" :description="`${judgeC}/${judgeNum}`"></el-step>\n' +
+            '    <el-step title="简答题" :description="`${answerC}/${answerNum}`"></el-step>\n' +
+            '  </el-steps>\n' +
+            '</div>' +
+            '<div style="flex: 4;" >' +
+            ' <el-form ref="form" :model="question" label-width="80px">\n' +
+            '            <el-form-item :label="name" v-model="question">\n' +
+            '                <br>\n' +
+            '                <span>{{question.stem}}</span>\n' +
+            '                <el-divider></el-divider>\n' +
+            '                <el-radio-group v-model="question.answer" @change="change" v-if="question.type==1">\n' +
+            '                    <el-radio label="a"  size="medium">{{question.a}}</el-radio>\n' +
+            '                    <el-divider></el-divider>\n' +
+            '                    <el-radio label="b" size="medium">{{question.b}}</el-radio>\n' +
+            '                    <el-divider></el-divider>\n' +
+            '                    <el-radio label="c" size="medium">{{question.c}}</el-radio>\n' +
+            '                    <el-divider></el-divider>\n' +
+            '                    <el-radio label="d" size="medium">{{question.d}}</el-radio>\n' +
+            '                    <el-divider></el-divider>\n' +
+            '                </el-radio-group>\n' +
+            '                <el-radio-group v-model="question.answer" @change="change" v-if="question.type==2">\n' +
+            '                    <el-radio label="1"  size="medium">正确</el-radio>\n' +
+            '                    <el-divider></el-divider>\n' +
+            '                    <el-radio label="0" size="medium">错误</el-radio>\n' +
+            '                    <el-divider></el-divider>\n' +
+            '                </el-radio-group>\n' +
+            '<el-input type="textarea" v-model="question.answer" v-if="question.type==3"></el-input>' +
+            '                    <el-divider v-if="question.type==3"></el-divider>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item>\n' +
+            '                <el-button type="primary" @click="last">上一题</el-button>\n' +
+            '                <el-button type="primary" @click="next">下一题</el-button>\n' +
+            '                <el-button type="primary" @click="dialogVisible = true">答题卡</el-button>\n' +
+            '                <el-button type="success" @click="submitPaper">交卷</el-button>\n' +
+            '                <el-dialog\n' +
+            '                        title="答题卡"\n' +
+            '                        :visible.sync="dialogVisible"\n' +
+            '                        width="30%"\n' +
+            '                >\n' +
+            '\n' +
+            '                    <el-form ref="form"  label-width="80px" label-position="top">\n' +
+            '                        <el-form-item label="选择题">\n' +
+            '                            <el-button\n' +
+            '                                    v-for="(question,i) in paper.choices"\n' +
+            ':key="question.id"' +
+            '                                    @click.native="move(question)"\n' +
+            '                                    :type="buttonType(question.answer,question.id,question.type)" \n' +
+            '                                    size = "medium"\n' +
+            '                                    round>\n' +
+            '                               {{i+1}}\n' +
+            '                            </el-button>\n' +
+            '                        </el-form-item>\n' +
+            '                        <el-form-item label="判断题">\n' +
+            '                            <el-button\n' +
+            '                                    v-for="(question,i) in paper.judges"\n' +
+            '                                    @click.native="move(question)"\n' +
+            ':key="question.id"' +
+            '                                    :type="buttonType(question.answer,question.id,question.type)"\n' +
+            '                                    size = "medium"\n' +
+            '                                    round>\n' +
+            '                                 {{i+1}}\n' +
+            '                            </el-button>\n' +
+            '                        </el-form-item>\n' +
+            '                        <el-form-item label="简答题">\n' +
+            '                            <el-button\n' +
+            '                                    v-for="(question,i) in paper.answers"\n' +
+            '                                    @click.native="move(question)"\n' +
+            ':key="question.id"' +
+            '                                    :type="buttonType(question.answer,question.id,question.type)"\n' +
+            '                                    size = "medium"\n' +
+            '                                    round>\n' +
+            '                                 {{i+1}}\n' +
+            '                            </el-button>\n' +
+            '                        </el-form-item>\n' +
+            '                    </el-form>\n' +
+            '                    <el-button @click="dialogVisible = false">取 消</el-button>\n' +
+            '                </el-dialog>\n' +
+            '            </el-form-item>\n' +
+            '        </el-form>' +
+            '</div>' +
+            '<div style="flex: 1">' +
+            '<el-alert\n' +
+            '    title="考试倒计时"\n' +
+            '    type="success"\n' +
+            '    :closable="false">\n' +
+            '  {{hr}}:{{min}}:{{sec}}</el-alert></div>' +
+            '</div>',
+    })
+    let paperList1 = Vue.component('paper', {
+        data: function () {
+            return {
+                end:'',
+                courseA: {
+                    courseId: '',
+                    courseName: '',
+                },
+                userId: '',
+                courseId: 0,
+                papers: [],
+                paper: {
+                    id: '',
+                    paperName: '',
+                    time: '',
+                    startTime:'',
+                    courseId: '',
+                    courseName: '',
+                    state: '',
+                    loop:'',
+                },
+                courses:[],
+                record: {
+                    id: '',
+                    account:'',
+                    examId: '',
+                    pna:'',
+                    userId: '',
+                    name: '',
+                    major: '',
+                    startTime: '',
+                    endTime: '',
+                    start: '',
+                    end: '',
+                    count: '',//分数
+                    state: '',
+                }
+            }
+        },
+        methods: {
+            endTime(start,hours){
+                var date = new Date(start);
+                date = date.getFullYear() + '-'
+                    + (date.getMonth()+1) + '-'   // 这里加1是因为getMonth()的返回值是为0~11
+                    + date.getDate() + ' '
+                    + date.getHours() + ':'
+                    + date.getMinutes() + ':'
+                    + date.getSeconds();
+                date = Date.parse(new Date(date))/1000; // 转换成时间戳，返回值是ms，除1000后转化成秒
+                date += hours*60*60; // 一天是86400秒
+                let newDate = new Date(parseInt(date) * 1000); // 把时间戳转换成日期
+                this.end = date* 1000
+            },
+            init() {
+                let index = this.$route.params.courseId ;
+                console.log(index)
+                this.userId = sessionStorage.getItem("userId");
+
+                if(index>0){
+                    axios({
+                        method: 'post',
+                        url: "http://localhost:8080/exam_2/course/selectByUser?userId=" + this.userId,
+                    }).then(resp => {
+                        //获取数据  设置表格数据 设置总记录数
+
+                        this.courses = resp.data;
+
+                        this.courseA=this.courses[index]
+                        console.log(this.courseA)
+                        this.courseId=this.courseA.courseId
+                        console.log(this.courseId)
+                        this.checkPaperByUAndC();
+
+                    })
+                }else{
+                    this.checkPaper()
+                }
+
+
+            },
+            checkPaper() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/paper/checkStu?userId=" + this.userId,
+                }).then(resp => {
+                    this.papers = resp.data;
+                    console.log(this.papers)
+                })
+
+            },
+            checkPaperByUAndC() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/paper/checkByUAndC?userId=" + this.userId + "&courseId=" + this.courseA.courseId,
+                }).then(resp => {
+                    this.papers = resp.data;
+                    console.log(this.papers)
+                })
+            },
+            joinExam(index, row) {
+                this.record.examId = row.id;
+                this.record.userId = this.userId;
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/record/addRecord",
+                    data: this.record,
+                }).then(resp => {
+
+                })
+                sessionStorage.setItem("paperId", row.id);
+                sessionStorage.setItem("loop","1");
+                this.$router.push('/exam')
+
+            },
+            dateFormat(time){
+                var date=new Date(time);
+                var year=date.getFullYear();
+                /* 在日期格式中，月份是从0开始的，因此要加0
+                * 使用三元表达式在小于10的前面加0，以达到格式统一  如 09:11:05
+                * */
+                var month= date.getMonth()+1<10 ? "0"+(date.getMonth()+1) : date.getMonth()+1;
+                var day=date.getDate()<10 ? "0"+date.getDate() : date.getDate();
+                var hours=date.getHours()<10 ? "0"+date.getHours() : date.getHours();
+                var minutes=date.getMinutes()<10 ? "0"+date.getMinutes() : date.getMinutes();
+                var seconds=date.getSeconds()<10 ? "0"+date.getSeconds() : date.getSeconds();
+                // 拼接
+                return year+"-"+month+"-"+day+" "+hours+":"+minutes;
+            },
+            compareTime(gettime){
+                var today = new Date()  //获取当前时间
+
+                //转化成时间戳作比较
+                var endTime = new Date(gettime) //自己的时间
+                if (today.getTime() > endTime.getTime()) {
+                    //当前时间大于我的时间
+                    return 1
+                } else {
+                    //当前时间小于我的时间
+                    return 0
+                }
+            },
+
+            //超过十五分钟后无法参加答卷
+            difference(beginTime) {
+                var dateBegin = new Date(beginTime);
+                var dateEnd = new Date();
+                //加上考试时长进行比较
+                var dateDiff = dateEnd.getTime() - dateBegin.getTime(); //时间差的毫秒数
+                var dayDiff = Math.floor(dateDiff / (24 * 3600 * 1000)); //计算出相差天数
+                var leave1 = dateDiff % (24 * 3600 * 1000); //计算天数后剩余的毫秒数
+                var hours = Math.floor(leave1 / (3600 * 1000)); //计算出小时数
+                //计算相差分钟数
+                var leave2 = leave1 % (3600 * 1000); //计算小时数后剩余的毫秒数
+                var minutes = Math.floor(leave2 / (60 * 1000)); //计算相差分钟数
+                //计算相差秒数
+                var leave3 = leave2 % (60 * 1000); //计算分钟数后剩余的毫秒数
+                var seconds = Math.round(leave3 / 1000);
+                console.log(
+                    "相差" +
+                    dayDiff +
+                    "天" +
+                    hours +
+                    "小时" +
+                    minutes +
+                    "分钟" +
+                    seconds +
+                    "秒"
+                );
+                if(dayDiff==0&&hours==0&&minutes<=15) {
+                    return 1
+                }else{
+                    return 0;
+                }
+            },
+        },
+        //超时了再调用init
+        mounted() {
+            this.init();
+            //显示结束日期时间
+
+            let _this = this// 声明一个变量指向Vue实例this，保证作用域一致
+
+            this.timer = setInterval(() => {
+                let date = new Date(); // 修改数据date
+                if(_this.papers.length>0){
+
+                    //只是比较了开始时间，结束时间没有比较
+                    for(let i=0;i<_this.papers.length;i++ ){
+                        _this.endTime(_this.papers[i].startTime,_this.papers[i].time)
+
+                        if(_this.papers[i].state!=0){
+                            if(_this.compareTime(_this.papers[i].startTime)==1&&_this.compareTime(_this.end)==0){
+                                _this.papers[i].loop=1;
+                            }
+                            else{
+                                _this.papers[i].loop=0;
+                            }
+                        }else{
+                            _this.papers[i].loop=0;
+                        }
+                    }
+
+                }
+                // console.log(this.paper)
+
+            }, 1000)
+
+        },
+        beforeDestroy() {
+            if (this.timer) {
+                clearInterval(this.timer); // 在Vue实例销毁前，清除我们的定时器
+            }
+        },
+        template: '<div>\n' +
+            '        <el-table\n' +
+            '                :data="papers"\n' +
+            '                border\n' +
+            '                style="width: 100%">\n' +
+            ' :default-sort = "{prop: \'date\', order: \'descending\'}" ' +
+            '            <el-table-column\n' +
+            '                    type="index"\n' +
+            '                    width="50"\n' +
+            '                    prop="序号">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="paperName"\n' +
+            '                    label="试卷名称"\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="time"\n' +
+            '                    label="考试时长"\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '<el-table-column label="开始时间" width="180" >\n' +
+            '    <template slot-scope="scope">\n' +
+            '        <span>{{dateFormat(scope.row.startTime)}}</span>\n' +
+            '    </template>\n' +
+            '</el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="courseName"\n' +
+            '                    label="课程名称">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="操作">\n' +
+            '                <template slot-scope="scope">\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n :disabled="scope.row.loop === 1 ? false:true"' +
+            '                            @click="joinExam(scope.$index, scope.row)">参加考试</el-button>\n' +
+            '                </template>\n' +
+            '\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '    </div>',
+    })
+    let paper2 = Vue.component('paper', {
+        data: function () {
+            return {
+                courses: [],
+                courseName: '课程',
+                courseId: '',
+                dialogVisible: false,
+                userId: '',
+                papers: [],
+                paper: {
+                    id: '',
+                    paperName: '',
+                    time: '',
+                    courseId: '',
+                    courseName: '',
+                    state: '',
+                },
+                record: {
+                    id: '',
+                    account:'',
+                    examId: '',
+                    pna:'',
+                    userId: '',
+                    name: '',
+                    major: '',
+                    startTime: '',
+                    endTime: '',
+                    start: '',
+                    end: '',
+                    count: '',//分数
+                    state: '',
+                },
+                records:[],
+            }
+        },
+        methods: {
+            checkGradePaperList() {
+                this.userId = sessionStorage.getItem("userId");
+                console.log(this.userId)
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/record/checkGradePaperList?userId=" + this.userId,
+                }).then(resp => {
+                    this.records = resp.data;
+                })
+
+            },
+
+            checkGradePaper(index, row) {
+                sessionStorage.setItem("paperId", row.examId + '')
+                this.$router.push('/gradePaper')
+            },
+        },
+        mounted() {
+            this.checkGradePaperList();
+        },
+        template: '<div>\n' +
+            ' <el-row style="text-align: left;">\n'+
+            '        </el-row>' +
+            '        <el-table\n' +
+            '                :data="records"\n' +
+            '                border\n' +
+            '                style="width: 100%">\n' +
+            '            <el-table-column\n' +
+            '                    type="index"\n' +
+            '                    width="50"\n' +
+            '                    prop="序号">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="pna"\n' +
+            '                    label="试卷名称"\n' +
+            '                    width="180">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    prop="count"\n' +
+            '                    label="分数"\n' +
+            '                    width="50">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="操作"' +
+            'width="500">\n' +
+            '                <template slot-scope="scope">\n' +
+            '                    <el-button\n' +
+            '                            size="mini"\n ' +
+            '                            @click="checkGradePaper(scope.$index, scope.row)">查看成绩</el-button>\n' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column label="状态"' +
+            ' width="200">\n' +
+            '                <template slot-scope="scope">\n' +
+            '<el-tag\n' +
+            '        type="success"\n' +
+            '        effect="dark"\n' +
+            '        >\n' +
+            '      已批阅\n' +
+            '</el-tag>' +
+            '                </template>\n' +
+            '            </el-table-column>\n' +
+            '        </el-table>\n' +
+            '    </div>',
+    })
+    let gradePaper = Vue.component('gradePaper', {
+        data: function () {
+            return {
+                //试卷ID
+                paperId: '',
+                userId:'',
+                //要编辑的试卷
+                paper: {
+                    choices: [],
+                    judges: [],
+                    answers: [],
+                },
+            }
+        },
+        methods: {
+            init() {
+                this.userId=sessionStorage.getItem("userId")
+                this.paperId = sessionStorage.getItem("paperId");
+                //试卷原有题目亦要显示
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/question/checkStuAnswer?userId="+this.userId+"&paperId="+this.paperId,
+                }).then(resp => {
+                    this.paper = resp.data;
+                    console.log(this.questions)
+                })
+            },
+            tableRowClassName({row, rowIndex}) {
+                if (row.score === 0) {
+                    return 'warning-row';
+                } else  {
+                    return '';
+                }
+
+            }
+
+        },
+        mounted() {
+            this.init();
+        },
+        template: '<div>\n' +
+            '    <!--        选择题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">选择题</span>\n' +
+            '        </el-row>\n' +
+            '    <el-table\n' +
+            '            :data="paper.choices"\n' +
+            '            style="width: 100%"' +
+            ':row-class-name="tableRowClassName">\n' +
+            '        <el-table-column type="expand">\n' +
+            '            <template slot-scope="props">\n' +
+            '                <el-form label-position="left" inline class="demo-table-expand">\n' +
+            '                    <el-form-item label="选项：A">\n' +
+            '                        <span>{{ props.row.a }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：B">\n' +
+            '                        <span>{{ props.row.b }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：C">\n' +
+            '                        <span>{{ props.row.c }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                    <el-form-item label="选项：D">\n' +
+            '                        <span>{{ props.row.d }}</span>\n' +
+            '                    </el-form-item>\n' +
+            '                </el-form>\n' +
+            '            </template>\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                type="index">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="题干"\n' +
+            '                prop="stem">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="正确答案"\n' +
+            '                prop="rightAnswer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="答案"\n' +
+            '                prop="answer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="分数"\n' +
+            '                prop="score">\n' +
+            '        </el-table-column>\n' +
+            '    </el-table>\n' +
+            ' <!--        判断题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">判断题</span>\n' +
+            '        </el-row>\n' +
+            '        <el-table\n' +
+            '                :data="paper.judges"\n' +
+            '                style="width: 100%"' +
+            ':row-class-name="tableRowClassName">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="答案"\n' +
+            '                prop="answer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="分数"\n' +
+            '                prop="score">\n' +
+            '        </el-table-column>\n' +
+            '        </el-table>\n' +
+            '        <!--        简答题-->\n' +
+            '        <el-row>\n' +
+            '            <span class="question_title">简答题</span>\n' +
+            '        </el-row>\n' +
+            '        <el-table\n' +
+            '                :data="paper.answers"\n' +
+            '                style="width: 100%"' +
+            ':row-class-name="tableRowClassName">\n' +
+            '            <el-table-column\n' +
+            '                    type="index">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="题干"\n' +
+            '                    prop="stem">\n' +
+            '            </el-table-column>\n' +
+            '            <el-table-column\n' +
+            '                    label="正确答案"\n' +
+            '                    prop="rightAnswer">\n' +
+            '            </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="答案"\n' +
+            '                prop="answer">\n' +
+            '        </el-table-column>\n' +
+            '        <el-table-column\n' +
+            '                label="分数"\n' +
+            '                prop="score">\n' +
+            '        </el-table-column>\n' +
+            '        </el-table>\n' +
+            '</div>',
+    })
+    let userInfo = Vue.component('userInfo', {
+        data: function () {
+            return {
+                userId: '',
+                role: '',
+                user: {
+                    id: '',
+                    account: '',
+                    password: '',
+                    name: '',
+                    role: '',
+                    sex: '',
+                    stuClass: '',
+                },
+                dialogVisibleAdd: false,
+            }
+        },
+        methods: {
+            init() {
+                this.userId = sessionStorage.getItem("userId");
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/selectInfo?id=" + this.userId,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    this.user = resp.data;
+                    if (this.user.role == '0') {
+                        this.role = '管理员'
+                    }
+                    if (this.user.role == '1') {
+                        this.role = '老师'
+                    }
+                    if (this.user.role == '2') {
+                        this.role = '学生'
+                    }
+
+                })
+            },
+            editUser() {
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/user/edit",
+                    headers: {'Content-Type': 'application/json;charset=UTF-8'},
+                    data: this.user,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    console.log(resp.data);
+                    if (resp.data = true) {
+                        this.dialogVisibleAdd = false;
+                        this.init()
+                        this.$message({
+                            type: 'success',
+                            message: '修改成功'
+                        });
+                    }
+                })
+            },
+
+        },
+        mounted() {
+            this.init();
+        },
+        template: '<div>' +
+            '<el-descriptions title="用户个人信息" direction="vertical" :column="4" border>\n' +
+            '        <template slot="extra">\n' +
+            '            <el-button type="primary"  @click = "dialogVisibleAdd = true">修改</el-button>\n' +
+            '        </template>\n' +
+            '        <el-descriptions-item label="姓名">{{user.name}}</el-descriptions-item>\n' +
+            '        <el-descriptions-item label="用户名">{{user.account}}</el-descriptions-item>\n' +
+            '        <el-descriptions-item label="班级" :span="2">{{user.stuClass}}</el-descriptions-item>\n' +
+            '        <el-descriptions-item label="身份">\n' +
+            '            <el-tag size="small">{{role}}</el-tag>\n' +
+            '        </el-descriptions-item>\n' +
+            '        <el-descriptions-item label="密码">{{user.password}}</el-descriptions-item>\n' +
+            '        <el-descriptions-item label="性别">\n' +
+            '            <el-tag size="small">{{user.sex}}</el-tag>\n' +
+            '        </el-descriptions-item>\n' +
+            '    </el-descriptions>' +
+            '    <el-dialog\n' +
+            '            title="修改信息"\n' +
+            '            :visible.sync="dialogVisibleAdd"\n' +
+            '            width="30%"\n' +
+            '    >\n' +
+            '        <el-form ref="form" :model="user" label-width="80px">\n' +
+            '            <el-form-item label="账号">{{ user.account }}\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="姓名">\n' +
+            '                <el-input v-model="user.name"></el-input>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="班级">{{ user.stuClass }}\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="密码">\n' +
+            '                <el-input v-model="user.password"></el-input>\n' +
+            '            </el-form-item>\n' +
+            '            <el-form-item label="性别">\n' +
+            '            <el-select v-model="user.sex" placeholder="性别">\n' +
+            '                <el-option label="男" value="男"></el-option>\n' +
+            '                <el-option label="女" value="女"></el-option>\n' +
+            '            </el-select>\n' +
+            '            </el-form-item>\n' +
+            '        </el-form>\n' +
+            '        <span slot="footer" class="dialog-footer">\n' +
+            '            <el-button @click="dialogVisibleAdd = false">取 消</el-button>\n' +
+            '        <el-button type="primary" @click="editUser">确认修改</el-button>\n' +
+            '  </span>\n' +
+            '    </el-dialog>\n' +
+            '</div>',
+    })
+    let routerObj = new VueRouter({
+        //route //这个吧、配置对象中的 route 表示 【路由匹配规则】 的意思
+        routes: [   //路由配置规则
+            //每个路由规则，都是一个对象，这个规则对象，身上，有两个必须的属性：
+            //属性1 是 path，表示监听 哪个路由链接地址；
+            //属性2 是 component，表示，如果 路由前面指定匹配到的 path，则展示 component 属性对应的那个组件
+            //注意：component 的属性值，必须是一个 组件的模块对象，不能是 组件的引用名称；
+            {path: '/exam', component: exam},
+            {path: '/list/:courseId', component: paperList1},
+            {path: '/grade', component: paper2},
+            {path: '/gradePaper', component: gradePaper},
+            {path: '/userInfo', component: userInfo},
+
+        ]
+    })
+    let main = new Vue({
+        el: "#app",
+        methods: {
+            reload() {
+                this.showRouterView = false
+                // if(this.$route.path=='/user/2'){
+                this.$nextTick(() => (this.showRouterView = true))
+            },
+            init() {
+
+                this.user.id = sessionStorage.getItem("userId")
+                this.user.name = sessionStorage.getItem("username")
+                console.log(this.$route.path)
+                //得到该老师的全部课程
+                axios({
+                    method: 'post',
+                    url: "http://localhost:8080/exam_2/course/selectByUser?userId=" + this.user.id,
+                }).then(resp => {
+                    //获取数据  设置表格数据 设置总记录数
+                    this.courses = resp.data;
+                })
+            },
+            handleSelect(key, keyPath) {
+                this.reload()
+                if (key == 6) {
+                    this.$confirm('是否继续退出在线考试', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'info'
+                    }).then(() => {
+                        location.href = "http://localhost:8080/exam_2/html/login.html"
+                        this.$message({
+                            type: 'success',
+                            message: '退出成功'
+                        });
+                    }).catch(() => {
+                        this.$message({
+                            type: 'info',
+                            message: '已取消'
+                        });
+                    });
+                }
+
+            },
+            dateFormat(time){
+                var date=new Date(time);
+                var year=date.getFullYear();
+                /* 在日期格式中，月份是从0开始的，因此要加0
+                * 使用三元表达式在小于10的前面加0，以达到格式统一  如 09:11:05
+                * */
+                var month= date.getMonth()+1<10 ? "0"+(date.getMonth()+1) : date.getMonth()+1;
+                var day=date.getDate()<10 ? "0"+date.getDate() : date.getDate();
+                var hours=date.getHours()<10 ? "0"+date.getHours() : date.getHours();
+                var minutes=date.getMinutes()<10 ? "0"+date.getMinutes() : date.getMinutes();
+                var seconds=date.getSeconds()<10 ? "0"+date.getSeconds() : date.getSeconds();
+                // 拼接
+                return year+"-"+month+"-"+day+" "+hours+":"+minutes+":"+seconds;
+            },
+
+        },
+        data() {
+            return {
+                date:new Date(),
+                showRouterView: true,
+                circleUrl: "https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png",
+                squareUrl: "https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png",
+                sizeList: ["large", "medium", "small"],
+                userId: '',
+                user: {
+                    id: '',
+                    name: '',
+                    password: '',
+                    sex: '',
+                    role: '',
+                },
+                courses: [],
+            }
+        },
+        router: routerObj,
+        //页面加载完成后发送请求
+        mounted() {
+            this.init();
+            //显示当前日期时间
+            let _this = this// 声明一个变量指向Vue实例this，保证作用域一致
+            this.timer = setInterval(() => {
+                _this.date = new Date(); // 修改数据date
+            }, 1000)
+
+        },
+        beforeDestroy() {
+            if (this.timer) {
+                clearInterval(this.timer); // 在Vue实例销毁前，清除我们的定时器
+            }
+        },
+    });
+
+</script>
+</body>
+</html>

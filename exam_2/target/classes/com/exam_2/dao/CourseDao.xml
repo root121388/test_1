@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam_2.dao.CourseDao">
+    <resultMap id="CourseMap" type="Course">
+        <result column="cno" property="courseId"></result>
+        <result column="cna" property="courseName"></result>
+    </resultMap>
+    <insert id="addCourse" useGeneratedKeys="true" keyProperty="courseId">
+        insert into course values(null,#{courseName})
+    </insert>
+    <insert id="addCourseUser">
+    insert into rel_course_user
+    values(#{course.courseId},#{id})
+    </insert>
+    <insert id="addStudent">
+        insert into rel_course_user
+        values(#{courseId},#{stuId})
+    </insert>
+    <update id="updateCourse">
+        update course
+        set cna = #{courseName}
+        where cno = #{courseId}
+    </update>
+    <delete id="deleteRecordByUser">
+        delete from rel_course_user where user_id=#{userId}
+    </delete>
+    <delete id="deletePC">
+        delete from rel_course_paper where cno = #{courseId}
+    </delete>
+    <delete id="deleteUC">
+        delete from rel_course_user where cno = #{courseId}
+    </delete>
+    <delete id="deleteC">
+        delete from course where cno = #{courseId}
+    </delete>
+    <select id="selectCourseByUserID" resultMap="CourseMap">
+        select course.cno,cna
+        from course,
+             rel_course_user
+        where course.cno = rel_course_user.cno
+          and user_id = #{id}
+    </select>
+    <select id="selectCourseByPaperId" resultMap="CourseMap" >
+        select course.cno,cna
+        from course,
+             rel_course_paper
+        where course.cno = rel_course_paper.cno
+          and pno = #{id}
+    </select>
+
+</mapper>
+
